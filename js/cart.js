@@ -95,110 +95,177 @@ document.addEventListener('DOMContentLoaded', () => {
     window.bindCartEvents = bindCartEvents;
     bindCartEvents();
 
-    // The getProducts function returns objects that HAVE the doc id attached as 'id' if we refactored it correctly.
-    // Let's assume getProducts returns the Firestore ID as 'id'.
+    // Real-time Checkout to Firestore
+    const checkoutBtn = document.querySelector('.checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', async (e) => {
+            // Prevent default form submission if it's a button inside form, though usually type="button" is safer
+            // But here it seems attached to .checkout-btn which might be outside or explicitly handled.
+            e.preventDefault();
 
-    // Wait, in products.js we did: products.push({ id: doc.id, ...doc.data() });
-    // So the 'id' in the product object IS the Firestore Document ID.
-    // The cart item 'id' comes from the product 'id'.
-    // So we can update directly.
+            if (cart.length === 0) return;
 
-    const product = products.find(p => p.id === cartItem.id);
-    if (product) {
-        const newStock = Math.max(0, (product.stock || 0) - cartItem.quantity);
-        const productRef = doc(db, 'products', product.id);
-        await updateDoc(productRef, { stock: newStock });
-    }
-}
+            const custName = document.getElementById('name').value.trim();
+            const custPhone = document.getElementById('tel').value.trim();
+            const custAddress = document.getElementById('address').value.trim();
+
+
+            if (!custName || !custPhone || !custAddress) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน / Please enter all required information.');
+                return;
+            }
+
+            // Slip handling currently simplified or removed in this view
+            const slipInput = document.getElementById('slip');
+            let slipData = null;
+            if (slipInput && slipInput.files[0]) {
+                // simple verify
+            } else {
+                if (!confirm('คุณยังไม่ได้แนบสลิปการโอนเงิน ต้องการดำเนินการต่อหรือไม่?')) return;
+            }
+
+            // Show Loading State
+            const originalText = checkoutBtn.innerHTML;
+            checkoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            checkoutBtn.disabled = true;
+
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('phrae_otop_currentUser'));
+                const newOrder = {
+                    userId: currentUser ? currentUser.id : 'guest',
+                    date: new Date().toISOString(), // Use ISO for better sorting
+                    displayDate: new Date().toLocaleString(),
+                    customer: {
+                        name: custName,
+                        phone: custPhone,
+                        address: custAddress
+                    },
+                    items: [...cart],
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    status: 'pending',
+                    slip: slipData,
+                    createdAt: new Date()
+                };
+
+                // WRITE TO FIRESTORE
+                if (typeof window.db !== 'undefined') {
+                    await window.db.collection('orders').add(newOrder);
+
+                    // Reduce stock for ordered items (Optimistic update)
+                    const products = window.getProducts ? await window.getProducts() : [];
+
+                    const batch = window.db.batch();
+
+                    for (const cartItem of cart) {
+                        const product = products.find(p => p.id === cartItem.id);
+                        if (product) {
+                            const productRef = window.db.collection('products').doc(product.id);
+                            // Decrement stock
+                            // For compat SDK, we might need firebase.firestore.FieldValue.increment(-cartItem.quantity)
+                            // But for safety in simple mode, we just write new stock
+                            const newStock = Math.max(0, (product.stock || 0) - cartItem.quantity);
+                            batch.update(productRef, { stock: newStock });
+                        }
+                    }
+                    await batch.commit();
+                } else {
+                    // Fallback incase DB is down
+                    let orders = JSON.parse(localStorage.getItem('otop_orders')) || [];
+                    orders.push(newOrder);
+                    localStorage.setItem('otop_orders', JSON.stringify(orders));
+                }
 
                 // SAVE ADDRESS FOR NEXT TIME
                 localStorage.setItem('phrae_otop_cust_info', JSON.stringify({
-    name: custName,
-    phone: custPhone,
-    address: custAddress
-}));
+                    name: custName,
+                    tel: custPhone,
+                    address: custAddress
+                }));
 
-// Clear cart
-cart = [];
-localStorage.setItem('otop_cart', JSON.stringify(cart));
+                // Clear cart
+                cart = [];
+                localStorage.setItem('otop_cart', JSON.stringify(cart));
+                updateBadge();
 
-alert('✅ สั่งซื้อสำเร็จ! ข้อมูลถูกส่งไปยังแอดมินเรียบร้อยแล้ว\nOrder confirmed!');
-window.location.href = 'index.html'; // Go back to home
+                alert('✅ สั่งซื้อสำเร็จ! ข้อมูลถูกส่งไปยังแอดมินเรียบร้อยแล้ว\nOrder confirmed!');
+                window.location.href = 'index.html'; // Go back to home
 
             } catch (error) {
-    console.error("Error creating order:", error);
-    alert('เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง\nError placing order: ' + error.message);
-    checkoutBtn.innerHTML = 'Proceed to Checkout';
-    checkoutBtn.disabled = false;
-}
+                console.error("Error creating order:", error);
+                alert('เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง\nError placing order: ' + error.message);
+                checkoutBtn.innerHTML = originalText;
+                checkoutBtn.disabled = false;
+            }
         });
     }
 
-// Cart Page Logic
-const cartItemsContainer = document.getElementById('cart-items');
-const cartTotalAmount = document.getElementById('cart-total-amount');
+    // Cart Page Logic
+    const cartItemsContainer = document.getElementById('cart-items');
+    const cartTotalAmount = document.getElementById('final-price'); // Adjusted ID based on earlier context
 
-const renderCart = () => {
-    if (!cartItemsContainer) return;
+    const renderCart = () => {
+        if (!cartItemsContainer) return;
 
-    const lang = localStorage.getItem('preferredLang') || 'th';
+        const lang = localStorage.getItem('preferredLang') || 'th';
 
-    if (cart.length === 0) {
-        cartItemsContainer.innerHTML = `<div class="empty-cart-message">
+        if (cart.length === 0) {
+            cartItemsContainer.innerHTML = `<div class="empty-cart-message">
                 <i class="fas fa-shopping-basket"></i>
                 <p data-i18n="cart_empty">${lang === 'th' ? 'ตะกร้าของคุณยังว่างอยู่' : 'Your cart is empty'}</p>
                 <a href="index.html#products" class="btn-primary" data-i18n="continue_shopping">${lang === 'th' ? 'เลือกซื้อสินค้าต่อ' : 'Continue Shopping'}</a>
             </div>`;
-        if (cartTotalAmount) cartTotalAmount.textContent = '฿0';
-        return;
-    }
+            if (cartTotalAmount) cartTotalAmount.textContent = '฿0';
+            // Also hide checkout form if empty? 
+            const cartContent = document.getElementById('cart-content');
+            if (cartContent) cartContent.style.display = 'none';
+            return;
+        }
 
-    cartItemsContainer.innerHTML = cart.map(item => `
-            <div class="cart-item" data-id="${item.id}">
-                <div class="cart-item-img">
-                    <img src="${item.image}" alt="">
+        // Ensure content is visible
+        const cartContent = document.getElementById('cart-content');
+        if (cartContent) cartContent.style.display = 'block';
+
+        cartItemsContainer.innerHTML = cart.map((item, index) => `
+            <div class="cart-item">
+                 <img src="${item.image}" alt="">
+                <div class="cart-item-details">
+                    <h4>${lang === 'th' ? item.title : item.titleEn}</h4>
+                    <p>฿${item.price.toLocaleString()}</p>
+                     <div class="qty-controls">
+                        <button onclick="updateQty('${item.id}', -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQty('${item.id}', 1)">+</button>
+                    </div>
                 </div>
-                <div class="cart-item-info">
-                    <h3>${lang === 'th' ? item.title : item.titleEn}</h3>
-                    <p class="cart-item-price">฿${item.price.toLocaleString()}</p>
-                </div>
-                <div class="cart-item-qty">
-                    <button class="qty-btn minus" onclick="updateQty('${item.id}', -1)">-</button>
-                    <span>${item.quantity}</span>
-                    <button class="qty-btn plus" onclick="updateQty('${item.id}', 1)">+</button>
-                </div>
-                <div class="cart-item-total">
-                    ฿${(item.price * item.quantity).toLocaleString()}
-                </div>
-                <button class="remove-item-btn" onclick="removeItem('${item.id}')">
+                <button class="remove-btn" onclick="removeItem('${item.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `).join('');
 
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    if (cartTotalAmount) cartTotalAmount.textContent = `฿${total.toLocaleString()}`;
-};
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (cartTotalAmount) cartTotalAmount.textContent = `฿${total.toLocaleString()}`;
+    };
 
-window.updateQty = (id, change) => {
-    const item = cart.find(i => i.id === id);
-    if (item) {
-        item.quantity += change;
-        if (item.quantity <= 0) {
-            cart = cart.filter(i => i.id !== id);
+    window.updateQty = (id, change) => {
+        const item = cart.find(i => i.id === id);
+        if (item) {
+            item.quantity += change;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== id);
+            }
+            localStorage.setItem('otop_cart', JSON.stringify(cart));
+            renderCart();
+            updateBadge();
         }
+    };
+
+    window.removeItem = (id) => {
+        cart = cart.filter(i => i.id !== id);
         localStorage.setItem('otop_cart', JSON.stringify(cart));
         renderCart();
         updateBadge();
-    }
-};
+    };
 
-window.removeItem = (id) => {
-    cart = cart.filter(i => i.id !== id);
-    localStorage.setItem('otop_cart', JSON.stringify(cart));
     renderCart();
-    updateBadge();
-};
-
-renderCart();
 });

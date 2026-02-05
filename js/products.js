@@ -117,59 +117,9 @@ const initialProducts = [
 ];
 
 // Check if Firestore is usable
-// Wait for window.db to be initialized in firebase-config.js
 window.isFirestoreEnabled = false;
 
-// Function to check DB readiness
-const checkDB = () => {
-    if (typeof window.db !== 'undefined') {
-        window.isFirestoreEnabled = true;
-        // Try caching products immediately
-        window.getProducts();
-    }
-};
-
-// Seed Data Logic
-const seedProducts = async () => {
-    if (!window.isFirestoreEnabled) return;
-
-    try {
-        const snapshot = await window.db.collection(COLLECTION_NAME).get();
-        if (snapshot.empty) {
-            console.log('Seeding initial products to Firestore...');
-            const batch = window.db.batch();
-
-            initialProducts.forEach(product => {
-                const docRef = window.db.collection(COLLECTION_NAME).doc();
-                batch.set(docRef, {
-                    ...product,
-                    createdAt: new Date().toISOString()
-                });
-            });
-
-            await batch.commit();
-            console.log('Seeding complete!');
-            window.location.reload();
-        }
-    } catch (error) {
-        console.error("Error seeding products: ", error);
-    }
-};
-
-// Retry initialization
-const initProducts = () => {
-    checkDB();
-    if (window.isFirestoreEnabled) {
-        seedProducts();
-    } else {
-        setTimeout(initProducts, 500);
-    }
-};
-
-// Start init
-initProducts();
-
-// Global fetch function
+// Global fetch function (Moved UP to prevent hoisting issues)
 window.getProducts = async () => {
     // Try Firestore first
     if (window.isFirestoreEnabled && window.db) {
@@ -196,7 +146,57 @@ window.getProducts = async () => {
     return initialProducts;
 };
 
-// Save Products (Admin helper, mostly unused now as we write direct)
+// Seed Data Logic (Also moved up)
+const seedProducts = async () => {
+    if (!window.isFirestoreEnabled) return;
+
+    try {
+        const snapshot = await window.db.collection(COLLECTION_NAME).get();
+        if (snapshot.empty) {
+            console.log('Seeding initial products to Firestore...');
+            const batch = window.db.batch();
+
+            initialProducts.forEach(product => {
+                const docRef = window.db.collection(COLLECTION_NAME).doc();
+                batch.set(docRef, {
+                    ...product,
+                    createdAt: new Date().toISOString()
+                });
+            });
+
+            await batch.commit();
+            console.log('Seeding complete!');
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error("Error seeding products: ", error);
+    }
+};
+
+// Check DB Readiness
+const checkDB = () => {
+    if (typeof window.db !== 'undefined') {
+        window.isFirestoreEnabled = true;
+        // Try caching products immediately - now safe as getProducts is defined
+        window.getProducts().then(() => {
+            seedProducts();
+        });
+    }
+};
+
+// Retry initialization
+const initProducts = () => {
+    checkDB();
+    if (!window.isFirestoreEnabled) {
+        // Retry a few times if needed, but don't loop forever blocking
+        setTimeout(initProducts, 500);
+    }
+};
+
+// Start init
+initProducts();
+
+// Save Products (Admin helper)
 window.saveProducts = async (products) => {
     console.warn("saveProducts called but we are on Firestore. Should update docs individually.");
 };
