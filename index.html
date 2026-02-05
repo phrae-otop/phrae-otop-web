@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phrae OTOP - ของดีเมืองแพร่</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-logo">OTOP <span>PHRAE</span></div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">OTOP <span>PHRAE</span></a>
+            <ul class="nav-links">
+                <li><a href="#home" data-i18n="nav_home">หน้าแรก</a></li>
+                <li><a href="#about" data-i18n="nav_about">เรื่องราวของเรา</a></li>
+                <li><a href="#products" data-i18n="nav_products">รายการสินค้า</a></li>
+                <li><a href="reviews.html" data-i18n="nav_reviews">รีวิวสินค้า</a></li>
+                <li><a href="how-to-order.html" data-i18n="nav_howto">วิธีการสั่งซื้อ</a></li>
+                <li><a href="#contact" data-i18n="nav_contact">ติดต่อเรา</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="search-box">
+                    <input type="text" id="product-search" data-i18n-placeholder="search_placeholder"
+                        placeholder="ค้นหาสินค้า...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang-switch="th">TH</button>
+                    <button class="lang-btn" data-lang-switch="en">EN</button>
+                </div>
+                <div class="cart-action">
+                    <a href="cart.html" class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero">
+        <div class="hero-content">
+            <h1 data-i18n="hero_title">สินค้า OTOP<br><span class="highlight">จังหวัดแพร่</span></h1>
+            <p data-i18n="hero_subtitle">สัมผัสเสน่ห์ผ้าหม้อห้อม งานไม้สัก และหัตถกรรมพื้นบ้านอันเลื่องชื่อ</p>
+            <a href="#products" class="btn-primary" data-i18n="hero_btn">ชมสินค้า</a>
+        </div>
+    </header>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-text reveal">
+                    <h2 data-i18n="about_title">มนต์เสน่ห์แห่งล้านนาตะวันออก</h2>
+                    <p data-i18n="about_desc">จังหวัดแพร่ ดินแดนแห่งขุนเขาและป่าไม้สักทอง แหล่งกำเนิด "ผ้าหม้อห้อม"
+                        ภูมิปัญญาการย้อมผ้าสีครามจากธรรมชาติ และงานแกะสลักไม้ที่วิจิตรบรรจง
+                        สินค้าโอทอปของเราเปี่ยมไปด้วยจิตวิญญาณแห่งวัฒนธรรมที่สืบทอดกันมายาวนาน</p>
+                </div>
+                <div class="about-image">
+                    <div class="img-box reveal">
+                        <img src="assets/images/about_lanna_bg_1768361587068.png" alt="มนต์เสน่ห์แห่งล้านนาแพร่">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- History and Significance Section -->
+    <section class="history-significance">
+        <div class="history-overlay"></div>
+        <div class="container">
+            <div class="history-content reveal">
+                <h2 data-i18n="history_title">ความเป็นมาและความสำคัญ</h2>
+                <p data-i18n="history_text">แพร่คือหัวใจแห่งลุ่มน้ำยม
+                    ดินแดนที่รุ่มรวยไปด้วยทรัพยากรธรรมชาติและประวัติศาสตร์ที่ยาวนานกว่าพันปี จากความสำคัญในฐานะ
+                    "นครแห่งไม้สักทอง" สู่การเป็นแหล่งบ่มเพาะปราชญ์ชาวบ้านผู้เชี่ยวชาญในงานหัตถศิลป์ ทุกชิ้นงาน OTOP
+                    ของเราคือการหลอมรวมจิตวิญญาณแห่งล้านนาตะวันออกและความมุ่งมั่นที่จะรักษาภูมิปัญญาโบราณให้ดำรงอยู่ท่ามกลางยุคสมัยที่เปลี่ยนแปลง
+                </p>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Heritage Highlights Detail Section -->
+    <section class="heritage-highlights">
+        <div class="container">
+            <h2 class="section-title reveal" data-i18n="heritage_title">ภูมิปัญญาแห่งวิถีแพร่</h2>
+            <p class="section-desc reveal"
+                style="text-align: center; max-width: 800px; margin: 0 auto 40px; color: #ccc; line-height: 1.6;">
+                "แพร่" มิใช่เพียงทางผ่าน แต่คือดินแดนที่ซ่อนเร้นเพชรเม็ดงามแห่งวัฒนธรรมล้านนา
+                จากขุนเขาอุดมสมบูรณ์สู่สองมือช่างฝีมือผู้บรรจงสร้างสรรค์งานศิลป์
+                ทุกตารางนิ้วของผืนผ้าและเนื้อไม้ล้วนบอกเล่าเรื่องราวความผูกพันระหว่างมนุษย์กับธรรมชาติที่สืบทอดกันมานับร้อยปี
+            </p>
+            <div class="heritage-grid">
+                <div class="heritage-card reveal">
+                    <div class="h-icon"><i class="fas fa-tshirt"></i></div>
+                    <h3 data-i18n="heritage_mohom_title">ผ้าหม้อห้อม - ลมหายใจแห่งคราม</h3>
+                    <p data-i18n="heritage_mohom_desc">
+                        เอกลักษณ์สีน้ำเงินเข้มจากต้น "ฮ่อม" พืชพื้นถิ่นที่เติบโตในป่าดิบชื้น
+                        ผ่านกระบวนการหมักด้วยภูมิปัญญาเชียงพ้องที่ซับซ้อนและประณีต
+                        สู่ผืนผ้าที่สวมใส่สบาย ระบายอากาศ และสะท้อนจิตวิญญาณอันเรียบง่ายแต่สง่างามของชาวแพร่
+                    </p>
+                </div>
+                <div class="heritage-card reveal">
+                    <div class="h-icon"><i class="fas fa-tree"></i></div>
+                    <h3 data-i18n="heritage_teak_title">ไม้สักทอง - ทองคำแห่งผืนป่า</h3>
+                    <p data-i18n="heritage_teak_desc">
+                        แพร่คือ "นครแห่งไม้สัก" ที่มีคุณภาพดีที่สุดในโลก เนื้อไม้แกร่ง ลวดลายสวยงามดั่งทองคำ
+                        ถูกรังสรรค์ผ่านปลายสิ่วของสล่าล้านนาจนเป็นเครื่องเรือนและของตกแต่งที่วิจิตรบรรจง
+                        คงคุณค่าความงามข้ามกาลเวลา
+                    </p>
+                </div>
+                <div class="heritage-card reveal">
+                    <div class="h-icon"><i class="fas fa-shopping-basket"></i></div>
+                    <h3 data-i18n="heritage_weaving_title">จักสาน - ศิลปะแห่งความอดทน</h3>
+                    <p data-i18n="heritage_weaving_desc">
+                        จากไม้ไผ่และหวายในท้องถิ่น สู่เส้นตอกที่ถูกจัดเรียงด้วยความใจเย็นและความชำนาญ
+                        กลายเป็นเครื่องใช้ไม้สอยที่มีดีไซน์ร่วมสมัย แข็งแรง ทนทาน
+                        และเปี่ยมไปด้วยเสน่ห์ของงานทำมือที่ไม่ซ้ำใคร
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+
+    <!-- Journey Through Phrae (New Tourist Section) -->
+    <section class="journey-phrae">
+        <div class="journey-bg"></div>
+        <div class="container">
+            <h2 class="section-title reveal" style="color:white; text-shadow: 0 5px 15px black;"
+                data-i18n="journey_title">ท่องเที่ยวนครแพร่</h2>
+            <div class="journey-grid">
+                <div class="journey-item reveal">
+                    <div class="j-img">
+                        <img src="assets/images/wat_phra_that_cho_hae.png" alt="Wat Phra That Cho Hae">
+                    </div>
+                    <div class="j-info">
+                        <h4 data-i18n="journey_1_title">วัดพระธาตุช่อแฮ</h4>
+                        <p data-i18n="journey_1_desc">ปูชนียสถานคู่บ้านคู่เมืองแพร่</p>
+                    </div>
+                </div>
+                <div class="journey-item reveal">
+                    <div class="j-img">
+                        <img src="assets/images/phrae_mueang_phi.png" alt="Phae Mueang Phi">
+                    </div>
+                    <div class="j-info">
+                        <h4 data-i18n="journey_2_title">แพะเมืองผี</h4>
+                        <p data-i18n="journey_2_desc">ปรากฏการณ์ธรรมชาติสุดมหัศจรรย์</p>
+                    </div>
+                </div>
+                <div class="journey-item reveal">
+                    <div class="j-img">
+                        <img src="assets/images/about_lanna_bg_1768361587068.png" alt="Khum Chao Luang">
+                    </div>
+                    <div class="j-info">
+                        <h4 data-i18n="journey_3_title">คุ้มเจ้าหลวง</h4>
+                        <p data-i18n="journey_3_desc">สถาปัตยกรรมไทย-ยุโรปที่งดงาม</p>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="#products" class="btn-primary"
+                    style="padding: 15px 40px; border-radius: 50px; font-size: 1.2rem;"
+                    data-i18n="journey_btn">ซื้อของฝากเมืองแพร่</a>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Featured Products -->
+    <section id="products" class="products">
+        <div id="products-particles" class="particles"></div>
+        <div class="container">
+            <h2 class="section-title reveal" data-i18n="section_products">รายการสินค้า</h2>
+
+            <div class="product-grid" id="main-product-grid">
+                <!-- Products will be dynamically loaded from js/products.js -->
+                <div class="loading">กำลังโหลดสินค้า... / Loading products...</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.initParticles) {
+                window.initParticles('products-particles', 30);
+            }
+        });
+    </script>
+
+    <!-- Contact Section -->
+    <footer id="contact" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <h3 data-i18n="footer_contact">ติดต่อเรา</h3>
+                    <p data-i18n="footer_addr">ศูนย์จำหน่ายสินค้า OTOP จังหวัดแพร่</p>
+                    <p><span data-i18n="footer_tel">โทร</span>: 088-273-7474</p>
+                    <p>Email: contact@phrae-otop.com</p>
+                    <p>Line: @otopphrae09</p>
+                </div>
+                <div class="footer-col">
+                    <h3 data-i18n="footer_follow">ติดตามข่าวสาร</h3>
+                    <div class="social-links">
+                        <a href="#">Facebook</a>
+                        <a href="#">Instagram</a>
+                        <a href="#">Line</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2026 Phrae OTOP. All Rights Reserved. | <a href="admin-login.html"
+                    style="color: #444; text-decoration: none;">Owner Login</a>
+            </div>
+        </div>
+    </footer>
+
+    <link rel="stylesheet" href="css/chat.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/chat-widget.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

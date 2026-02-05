@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตะกร้าสินค้า - Phrae OTOP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-logo">OTOP <span>PHRAE</span></div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">OTOP <span>PHRAE</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#home" data-i18n="nav_home">หน้าแรก</a></li>
+                <li><a href="index.html#about" data-i18n="nav_about">เรื่องราวของเรา</a></li>
+                <li><a href="index.html#products" data-i18n="nav_products">รายการสินค้า</a></li>
+                <li><a href="index.html#contact" data-i18n="nav_contact">ติดต่อเรา</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang-switch="th">TH</button>
+                    <button class="lang-btn" data-lang-switch="en">EN</button>
+                </div>
+                <div class="cart-action">
+                    <a href="cart.html" class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Cart Content -->
+    <section class="cart-page">
+        <div class="container">
+            <h1 class="section-title" data-i18n="cart_title">ตะกร้าสินค้าของคุณ</h1>
+
+            <div id="cart-items" class="cart-items-list">
+                <!-- Cart items will be rendered by cart.js -->
+            </div>
+
+            <div id="cart-summary" class="cart-summary">
+                <div class="customer-info-section">
+                    <h3 data-i18n="customer_info_title">ข้อมูลผู้ซื้อ / Customer Information</h3>
+                    <div class="info-form">
+                        <div class="input-group">
+                            <label for="cust-name" data-i18n="cust_name">ชื่อ-นามสกุล / Full Name</label>
+                            <input type="text" id="cust-name" placeholder="ระบุชื่อของคุณ" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="cust-phone" data-i18n="cust_phone">เบอร์โทรศัพท์ / Phone Number</label>
+                            <input type="tel" id="cust-phone" placeholder="08x-xxx-xxxx" required>
+                        </div>
+
+                        <!-- Payment Section Inline -->
+                        <div class="payment-section-inline full-width">
+                            <h3 data-i18n="payment_info_title"
+                                style="margin-top: 20px; font-size: 1.1rem; color: var(--primary-color);">
+                                ช่องทางชำระเงิน / Payment Details</h3>
+                            <div class="bank-info-box">
+                                <div class="bank-logo">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <div class="bank-details">
+                                    <p><strong>ธนาคาร กรุงไทย (Krungthai Bank)</strong></p>
+                                    <p class="account-number">0123456789</p>
+                                    <p>ชื่อบัญชี / Account Name: โอทอป แพร่ (Phrae OTOP)</p>
+                                </div>
+                            </div>
+                            <div class="upload-slip-group">
+                                <label for="payment-slip"><i class="fas fa-file-upload"></i> แนบสลิปโอนเงิน / Upload
+                                    Slip</label>
+                                <input type="file" id="payment-slip" accept="image/*">
+                                <small class="upload-hint">แนบคลิปหลักฐานการโอนเงินเพื่อความรวดเร็วในการตรวจสอบ</small>
+                                <div id="slip-preview" class="slip-preview-container"></div>
+                            </div>
+                        </div>
+                        <div class="input-group full-width">
+                            <label for="cust-address" data-i18n="cust_address">ที่อยู่จัดส่ง / Shipping Address</label>
+                            <textarea id="cust-address" rows="3" placeholder="ระบุที่อยู่สำหรับจัดส่งสินค้า"
+                                required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-row">
+                    <span data-i18n="cart_total">ยอดรวมทั้งหมด</span>
+                    <span id="cart-total-amount" class="total-price">฿0</span>
+                </div>
+                <button class="btn-primary checkout-btn" data-i18n="checkout_btn">ดำเนินการชำระเงิน</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <h3 data-i18n="footer_contact">ติดต่อเรา</h3>
+                    <p data-i18n="footer_addr">ศูนย์จำหน่ายสินค้า OTOP จังหวัดแพร่</p>
+                    <p><span data-i18n="footer_tel">โทร</span>: 088-273-7474</p>
+                    <p>Email: contact@phrae-otop.com</p>
+                    <p>Line: @otopphrae09</p>
+                </div>
+                <div class="footer-col">
+                    <h3 data-i18n="footer_follow">ติดตามข่าวสาร</h3>
+                    <div class="social-links">
+                        <a href="#">Facebook</a>
+                        <a href="#">Instagram</a>
+                        <a href="#">Line</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2026 Phrae OTOP. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

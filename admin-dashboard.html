@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Phrae OTOP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-crown"></i>
+                <span>OTOP Admin</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="active" data-tab="products"><i class="fas fa-box"></i> สินค้า</a>
+                <a href="#" data-tab="orders"><i class="fas fa-shopping-bag"></i> รายการสั่งซื้อ</a>
+                <a href="#" data-tab="shipping"><i class="fas fa-truck"></i> รายการจัดส่ง</a>
+                <a href="#" data-tab="history"><i class="fas fa-history"></i> ประวัติคำสั่งซื้อ</a>
+                <a href="#" data-tab="users"><i class="fas fa-users-cog"></i> สมาชิก</a>
+                <a href="#" data-tab="messages"><i class="fas fa-comments"></i> ข้อความลูกค้า <span id="msg-badge"
+                        style="background:var(--primary-color);color:#000;border-radius:50%;padding:2px 6px;font-size:10px;margin-left:5px;display:none;">0</span></a>
+                <a href="#" data-tab="settings"><i class="fas fa-cog"></i> ตั้งค่า</a>
+                <a href="#" onclick="adminLogout()" class="logout-link"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ
+                    (Logout)</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sound-toggle" id="toggle-sound">
+                    <i class="fas fa-volume-mute" id="sound-icon"></i>
+                    <span>เสียงแจ้งเตือน: <strong id="sound-status">ปิด</strong></span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Notification Audio -->
+        <audio id="notification-sound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"
+            preload="auto"></audio>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Products Tab -->
+            <section id="products-tab" class="tab-content active">
+                <div class="content-header">
+                    <h2>จัดการแนะนำสินค้า</h2>
+                    <button class="btn-primary" onclick="openProductModal()"><i class="fas fa-plus"></i>
+                        เพิ่มสินค้าใหม่</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>รูปภาพ</th>
+                                <th>ชื่อสินค้า (TH/EN)</th>
+                                <th>ราคา</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-product-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Orders Tab -->
+            <section id="orders-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>รายการสั่งซื้อใหม่ (รอแพ็คสินค้า)</h2>
+                </div>
+                <div id="admin-order-list" class="order-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Shipping Tab -->
+            <section id="shipping-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>รายการใกล้จัดส่ง (แพ็คเสร็จแล้ว)</h2>
+                </div>
+                <div id="admin-shipping-list" class="order-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- History Tab -->
+            <section id="history-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>ประวัติคำสั่งซื้อ (จัดส่งสำเร็จ)</h2>
+                </div>
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-customers">0</h3>
+                            <p>ลูกค้าทั้งหมด</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-items">0</h3>
+                            <p>สินค้าที่จัดส่งแล้ว</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-revenue">฿0</h3>
+                            <p>ยอดขายทั้งหมด</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="admin-history-list" class="order-list">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Users Tab -->
+            <section id="users-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>รายชื่อสมาชิก (Members)</h2>
+                </div>
+                <div class="stats-summary" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-members-count">0</h3>
+                            <p>สมาชิกทั้งหมด</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ชื่อผู้ใช้ (Username)</th>
+                                <th>อีเมล (Email)</th>
+                                <th>รหัสผ่าน (Password)</th>
+                                <th>วันที่สมัคร (Joined Date)</th>
+                                <th>จัดการ (Actions)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section id="settings-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>ตั้งค่าร้านค้า</h2>
+                </div>
+                <div class="settings-form card" style="margin-bottom:30px;">
+                    <h3>เปลี่ยนรหัสผ่านของแอดมิน (Change Admin Password)</h3>
+                    <p style="color:#aaa; font-size:0.9rem; margin-bottom:20px;">
+                        เปลี่ยนรหัสผ่านสำหรับบัญชี: <strong id="current-admin-username"></strong>
+                    </p>
+                    <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                        <div class="input-group" style="flex:1">
+                            <label>รหัสผ่านปัจจุบัน (Current Password)</label>
+                            <input type="password" id="current-password" placeholder="กรอกรหัสผ่านปัจจุบัน">
+                        </div>
+                        <div class="input-group" style="flex:1">
+                            <label>รหัสผ่านใหม่ (New Password)</label>
+                            <input type="password" id="new-password-self" placeholder="กรอกรหัสผ่านใหม่">
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="changeMyPassword()">
+                        <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+                    </button>
+                </div>
+
+                <div class="settings-form card">
+                    <h3>จัดการผู้ดูแล (Admin Management)</h3>
+                    <div style="margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:20px;">
+                        <h4>เพิ่ม/แก้ไข ผู้ใช้งาน</h4>
+                        <input type="hidden" id="admin-edit-index">
+                        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="input-group" style="flex:1">
+                                <label>Username</label>
+                                <input type="text" id="new-admin-user" placeholder="Username">
+                            </div>
+                            <div class="input-group" style="flex:1">
+                                <label>Password</label>
+                                <input type="password" id="new-admin-pass" placeholder="Password">
+                            </div>
+                        </div>
+                        <div class="input-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="input-group" style="flex:1">
+                                <label>ชื่อที่แสดง (Display Name)</label>
+                                <input type="text" id="new-admin-name" placeholder="ชื่อพนักงาน">
+                            </div>
+                            <div class="input-group" style="flex:1">
+                                <label>ตำแหน่ง (Role)</label>
+                                <select id="new-admin-role"
+                                    style="width:100%; padding:15px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#fff;">
+                                    <option value="staff">Staff (พนักงานทั่วไป)</option>
+                                    <option value="admin">Admin (ผู้จัดการร้าน)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn-primary" onclick="saveAdminUser()">บันทึกข้อมูล</button>
+                    </div>
+
+                    <h4>รายชื่อผู้ดูแลระบบ</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ชื่อ</th>
+                                    <th>Username</th>
+                                    <th>ตำแหน่ง</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-management-list">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Backup & Restore Section -->
+                <div class="settings-form card" style="margin-top: 30px;">
+                    <h3><i class="fas fa-database"></i> สำรองและกู้คืนข้อมูล (Backup & Restore)</h3>
+                    <p style="color: #aaa; margin-bottom: 20px;">ดาวน์โหลดข้อมูลทั้งหมดเก็บไว้ หรือนำข้อมูลเดิมกลับมาใช้
+                    </p>
+
+                    <div class="action-buttons" style="display: flex; gap: 15px;">
+                        <button class="btn-primary" onclick="exportBackupData()" style="flex: 1; background: #2196F3;">
+                            <i class="fas fa-download"></i> ดาวน์โหลดข้อมูล (Backup)
+                        </button>
+                        <button class="btn-secondary" onclick="document.getElementById('restore-file').click()"
+                            style="flex: 1;">
+                            <i class="fas fa-upload"></i> กู้คืนข้อมูล (Restore)
+                        </button>
+                        <input type="file" id="restore-file" accept=".json" style="display: none;"
+                            onchange="importBackupData(this)">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Tab -->
+            <section id="messages-tab" class="tab-content">
+                <div class="content-header">
+                    <h2>ข้อความจากลูกค้า</h2>
+                </div>
+                <div class="admin-chat-container" id="admin-chat-container"
+                    style="display:flex; flex-direction:row; overflow:hidden;">
+                    <!-- Left Side: User List -->
+                    <div class="chat-list" id="chatUserList"
+                        style="width:30%; border-right:1px solid rgba(255,255,255,0.1); overflow-y:auto; background:rgba(0,0,0,0.2);">
+                        <!-- User items populated by JS -->
+                    </div>
+
+                    <!-- Right Side: Chat Window -->
+                    <div class="chat-window" style="width:70%; display:flex; flex-direction:column; position:relative;">
+                        <div class="chat-header-user" id="chatHeaderUser"
+                            style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.4); display:none;">
+                            <span id="activeUserName" style="font-weight:bold; color:var(--primary-color);">Select a
+                                user</span>
+                        </div>
+
+                        <div class="chat-messages" id="adminChatMessages"
+                            style="flex:1; overflow-y:auto; padding:20px;">
+                            <div style="text-align:center; color:#666; margin-top:50px;">Please select a conversation
+                            </div>
+                        </div>
+
+                        <div class="chat-input-area" id="adminChatInputArea" style="background: #333; display:none;">
+                            <input type="file" id="adminImageInput" hidden accept="image/*">
+                            <button class="send-btn" id="adminImageBtn"
+                                style="background: #444; color: #fff; margin-right: 10px;"><i
+                                    class="fas fa-image"></i></button>
+                            <input type="text" id="adminChatInput" placeholder="ตอบกลับลูกค้า..."
+                                style="background: #222; border-color: #444; color: #fff;">
+                            <button class="send-btn" id="adminSendBtn"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">เพิ่ม/แก้ไขสินค้า</h3>
+            <form id="product-form">
+                <input type="hidden" id="edit-id">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>ชื่อสินค้า (ไทย)</label>
+                        <input type="text" id="p-title" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Product Name (EN)</label>
+                        <input type="text" id="p-title-en" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>คำอธิบาย (ไทย)</label>
+                    <textarea id="p-desc" rows="3" required></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Description (EN)</label>
+                    <textarea id="p-desc-en" rows="3" required></textarea>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>ราคา (บาท)</label>
+                        <input type="number" id="p-price" required>
+                    </div>
+                    <div class="input-group">
+                        <label>สต็อก (จำนวนคงเหลือ)</label>
+                        <input type="number" id="p-stock" min="0" value="100" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>URL รูปภาพ</label>
+                    <input type="text" id="p-image" placeholder="assets/images/..." required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeProductModal()">ยกเลิก</button>
+                    <button type="submit" class="btn-primary">บันทึกสินค้า</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        // Subtle Golden Particles Logic
+        const particleContainer = document.getElementById('dashboard-particles');
+        const particleCount = 30; // Fewer particles for dashboard to serve as background
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('d-particle');
+
+            const size = Math.random() * 3 + 1 + 'px';
+            const left = Math.random() * 100 + 'vw';
+            const duration = Math.random() * 10 + 10 + 's'; // Slow movement 10-20s
+            const delay = Math.random() * 5 + 's';
+
+            particle.style.width = size;
+            particle.style.height = size;
+            particle.style.left = left;
+            // Gold colors
+            particle.style.background = Math.random() > 0.5 ? '#FFD700' : '#B8860B';
+            particle.style.boxShadow = '0 0 5px rgba(255, 215, 0, 0.5)';
+            particle.style.animationDuration = duration;
+            particle.style.animationDelay = delay;
+
+            particleContainer.appendChild(particle);
+
+            // Loop functionality handled by CSS usually, but here we can just let them float up continuously if we reused the admin login CSS.
+            // But since this is a new container, we need CSS for .d-particle.
+            // We'll add the styles dynamically here or in admin.css.
+            // Let's add them via style injection to be self-contained in this block for now or assume admin.css update.
+            // Re-creating continuously:
+            setTimeout(() => {
+                particle.remove();
+                createParticle();
+            }, parseFloat(duration) * 1000);
+        }
+
+        // Initialize
+        for (let i = 0; i < particleCount; i++) {
+            createParticle();
+        }
+    </script>
+</body>
+
+</html>

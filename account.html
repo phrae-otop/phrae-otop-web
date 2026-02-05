@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - Phrae OTOP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/account.css">
+    <style>
+        .account-page {
+            padding: 120px 0 80px;
+            background: var(--bg-color);
+            min-height: 100vh;
+        }
+
+        .account-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .account-sidebar {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 30px;
+            height: fit-content;
+        }
+
+        .user-profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .user-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #333;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: var(--primary-color);
+            border: 3px solid var(--primary-color);
+        }
+
+        .user-profile-header h3 {
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .user-profile-header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .account-menu {
+            list-style: none;
+        }
+
+        .account-menu li {
+            margin-bottom: 10px;
+        }
+
+        .account-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: #ccc;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .account-menu a:hover,
+        .account-menu a.active {
+            background: rgba(230, 33, 41, 0.1);
+            color: var(--primary-color);
+        }
+
+        .account-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 40px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .order-card {
+            background: #151515;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-info h4 {
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .order-info p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .order-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .status-shipped {
+            background: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+        }
+
+        .status-completed {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .account-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-logo">OTOP <span>PHRAE</span></div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    <!-- Navigation (Same as index) -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">OTOP <span>PHRAE</span></a>
+            <!-- Shared navbar content via auth.js updateNavbar -->
+            <div class="nav-actions">
+                <div class="cart-action">
+                    <a href="cart.html" class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="account-page">
+        <div class="container">
+            <h1 class="section-title">บัญชีของฉัน (My Account)</h1>
+
+            <div class="account-grid">
+                <aside class="account-sidebar">
+                    <div class="user-profile-header">
+                        <div class="user-avatar-large" id="profile-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <h3 id="profile-name">Username</h3>
+                        <p id="profile-email">email@example.com</p>
+                    </div>
+
+                    <ul class="account-menu">
+                        <li><a href="#" class="active" data-section="profile"><i class="fas fa-user"></i>
+                                ข้อมูลส่วนตัว</a></li>
+                        <li><a href="#" data-section="orders"><i class="fas fa-shopping-bag"></i> รายการสั่งซื้อ</a>
+                        </li>
+                        <li><a href="#" data-section="password"><i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน</a></li>
+                        <li><a href="#" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</a></li>
+                    </ul>
+                </aside>
+
+                <main class="account-content">
+                    <!-- Profile Section -->
+                    <section id="profile-section" class="content-section active">
+                        <h2 style="color: white; margin-bottom: 20px;">ข้อมูลโปรไฟล์</h2>
+                        <div class="form-group">
+                            <label>ชื่อผู้ใช้งาน</label>
+                            <input type="text" id="edit-username" value="" readonly
+                                style="background: #222; border-color: #444; color: #aaa;">
+                        </div>
+                        <div class="form-group">
+                            <label>อีเมล</label>
+                            <input type="email" id="edit-email" value="" readonly
+                                style="background: #222; border-color: #444; color: #aaa;">
+                        </div>
+                        <p style="color: #666; font-size: 0.8rem; margin-top: 20px;">*
+                            ข้อมูลพื้นฐานยังไม่สามารถแก้ไขได้ในขณะนี้</p>
+                    </section>
+
+                    <!-- Orders Section -->
+                    <section id="orders-section" class="content-section">
+                        <h2 style="color: white; margin-bottom: 20px;">รายการสั่งซื้อ</h2>
+                        <div id="orders-list">
+                            <!-- Orders will be loaded here -->
+                            <div style="text-align: center; color: #666; padding: 40px;">
+                                <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <p>ไม่พบรายการสั่งซื้อของคุณ</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Change Password Section -->
+                    <section id="password-section" class="content-section">
+                        <h2 style="color: white; margin-bottom: 20px;">เปลี่ยนรหัสผ่าน</h2>
+                        <form id="change-password-form" class="settings-form">
+                            <div class="form-group">
+                                <label style="color:#aaa; display:block; margin-bottom:8px;">รหัสผ่านปัจจุบัน</label>
+                                <input type="password" id="current-password" required
+                                    style="width:100%; padding:10px; background:#222; border:1px solid #444; color:white; border-radius:5px; margin-bottom:15px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#aaa; display:block; margin-bottom:8px;">รหัสผ่านใหม่</label>
+                                <input type="password" id="new-user-password" required
+                                    style="width:100%; padding:10px; background:#222; border:1px solid #444; color:white; border-radius:5px; margin-bottom:15px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="color:#aaa; display:block; margin-bottom:8px;">ยืนยันรหัสผ่านใหม่</label>
+                                <input type="password" id="confirm-user-password" required
+                                    style="width:100%; padding:10px; background:#222; border:1px solid #444; color:white; border-radius:5px; margin-bottom:20px;">
+                            </div>
+                            <button type="submit" class="btn-primary" style="width:100%;">บันทึกรหัสผ่านใหม่</button>
+                        </form>
+                    </section>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Load profile data
+            document.getElementById('profile-name').textContent = user.username;
+            document.getElementById('profile-email').textContent = user.email;
+            document.getElementById('edit-username').value = user.username;
+            document.getElementById('edit-email').value = user.email;
+
+            // Generate avatar if name available
+            const avatarDiv = document.getElementById('profile-avatar');
+            avatarDiv.innerHTML = `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=E62129&color=fff" 
+                style="width: 100%; height: 100%; border-radius: 50%; opacity: 1;">`;
+
+            // Tab Switching Logic
+            const menuLinks = document.querySelectorAll('.account-menu a[data-section]');
+            const sections = document.querySelectorAll('.content-section');
+
+            menuLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.dataset.section + '-section';
+
+                    menuLinks.forEach(l => l.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+
+                    link.classList.add('active');
+                    document.getElementById(sectionId).classList.add('active');
+                });
+            });
+
+            // Check URL Params for Tab Switching
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam) {
+                const targetLink = document.querySelector(`.account-menu a[data-section="${tabParam}"]`);
+                if (targetLink) {
+                    targetLink.click();
+                }
+            }
+        });
+    </script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/account.js"></script>
+</body>
+
+</html>

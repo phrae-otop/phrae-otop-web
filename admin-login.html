@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Phrae OTOP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FFD700;
+            /* Gold */
+            --primary-dark: #B8860B;
+            --bg-color: #050505;
+            --card-bg: rgba(20, 20, 20, 0.6);
+            --text-color: #FFFFFF;
+            --border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+        }
+
+        /* Golden Embers Animation */
+        #ember-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .ember {
+            position: absolute;
+            bottom: -10px;
+            width: 4px;
+            height: 4px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-dark);
+            opacity: 0;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(-100vh) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Glassmorphism Card */
+        .login-card {
+            position: relative;
+            z-index: 10;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        @keyframes floatCard {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .login-card h1 {
+            margin-bottom: 40px;
+            font-size: 2rem;
+            background: linear-gradient(to right, #FFD700, #FDB931, #FFD700);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .input-group label {
+            position: absolute;
+            top: -10px;
+            left: 15px;
+            background: var(--bg-color);
+            /* Match bg to hide line if needed, but here transparent might be tricky */
+            background: rgba(0, 0, 0, 0.8);
+            /* Slight hacks for label overlap */
+            padding: 0 5px;
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            z-index: 2;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #FFFFFF;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4);
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6);
+            background: linear-gradient(135deg, #FFE55C 0%, #DAA520 100%);
+        }
+
+        .error-msg {
+            color: #FF4D4D;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            display: none;
+            text-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+
+        /* Custom Cursor Styles */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s;
+        }
+
+        body.cursor-hover .cursor-outline {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 215, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Embers Container -->
+    <div id="ember-container"></div>
+
+    <div class="login-card">
+        <h1>OTOP PHRAE <span
+                style="display:block; font-size:1rem; color:#aaa; letter-spacing:5px; margin-top:5px; text-shadow:none;">ADMINISTRATION</span>
+        </h1>
+
+        <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="admin-user" placeholder="Admin Username">
+        </div>
+
+        <!-- Honeypot for SPAM protection (Hidden) -->
+        <div style="opacity: 0; position: absolute; top: 0; left: 0; height: 0; width: 0; z-index: -1;">
+            <label>Website URL</label>
+            <input type="text" id="website_url_honeypot" name="website_url_honeypot" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="admin-pass" placeholder="••••••••">
+        </div>
+
+        <button class="login-btn" onclick="login()">เข้าสู่ระบบ</button>
+        <p id="error" class="error-msg"><i class="fas fa-exclamation-circle"></i> ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!</p>
+    </div>
+
+    <script>
+        function login() {
+            // Spam Check
+            const honeypot = document.getElementById('website_url_honeypot');
+            if (honeypot && honeypot.value) {
+                console.log('Bot detected!');
+                return; // Silently fail
+            }
+
+            const user = document.getElementById('admin-user').value.trim();
+            const pass = document.getElementById('admin-pass').value;
+
+            // 1. Initialize Admins if empty
+            // 1. Initialize Admins if empty OR force update default
+            let admins = JSON.parse(localStorage.getItem('phrae_otop_admins'));
+            if (!admins || admins.length === 0) {
+                admins = [{
+                    username: 'tawanwat59',
+                    password: '59955995',
+                    role: 'admin',
+                    name: 'Super Admin'
+                }];
+                localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
+            } else {
+                // Feature: Auto-migrate 'admin' to 'tawanwat59' AND enforce new password
+                const defaultAdmin = admins.find(a => a.username === 'admin' || a.username === 'tawanwat59');
+                if (defaultAdmin) {
+                    defaultAdmin.username = 'tawanwat59';
+                    defaultAdmin.password = '59955995'; // Enforce new password
+                    localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
+                }
+            }
+
+            // 2. Validate
+            const foundUser = admins.find(u => u.username === user && u.password === pass);
+
+            if (foundUser) {
+                // Store full user object not just boolean
+                sessionStorage.setItem('isAdmin', 'true');
+                sessionStorage.setItem('currentAdminUser', JSON.stringify(foundUser));
+
+                // Add success effect
+                const btn = document.querySelector('.login-btn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเข้าสู่ระบบ...';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    window.location.href = 'admin-dashboard.html';
+                }, 800);
+            } else {
+                const errorMsg = document.getElementById('error');
+                errorMsg.style.display = 'block';
+                errorMsg.style.animation = 'shake 0.5s';
+                setTimeout(() => errorMsg.style.animation = '', 500);
+            }
+        }
+
+        // Auto-login with Enter
+        document.getElementById('admin-pass').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+        document.getElementById('admin-user').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+
+        // Golden Embers Logic
+        const emberContainer = document.getElementById('ember-container');
+        const colors = ['#FFD700', '#FF4500', '#FF8C00', '#FFA500'];
+
+        function createEmber() {
+            const ember = document.createElement('div');
+            ember.classList.add('ember');
+
+            // Randomize properties
+            const size = Math.random() * 5 + 2 + 'px';
+            const left = Math.random() * 100 + 'vw';
+            const duration = Math.random() * 3 + 4 + 's'; // 4-7s
+            const delay = Math.random() * 5 + 's';
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            ember.style.width = size;
+            ember.style.height = size;
+            ember.style.left = left;
+            ember.style.backgroundColor = color;
+            ember.style.boxShadow = `0 0 ${Math.random() * 10 + 5}px ${color}`;
+            ember.style.animationDuration = duration;
+            ember.style.animationDelay = delay;
+
+            emberContainer.appendChild(ember);
+
+            // Cleanup
+            setTimeout(() => {
+                ember.remove();
+            }, (parseFloat(duration) + parseFloat(delay)) * 1000);
+        }
+
+        // Initial burst
+        for (let i = 0; i < 50; i++) {
+            createEmber();
+        }
+
+        // Continuous generation
+        setInterval(createEmber, 300);
+
+        // Shake Animation Keyframe
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes shake {
+                0% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                50% { transform: translateX(10px); }
+                75% { transform: translateX(-10px); }
+                100% { transform: translateX(0); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+    </script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

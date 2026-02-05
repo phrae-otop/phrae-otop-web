@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Order - Phrae OTOP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <style>
+        .page-header {
+            padding: 120px 0 60px;
+            text-align: center;
+            background: var(--bg-color);
+            position: relative;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        /* Steps Section */
+        .steps-section {
+            padding: 60px 0;
+            background: var(--bg-color);
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            padding: 20px 0;
+        }
+
+        .step-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(230, 33, 41, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+
+        .step-number::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120%;
+            height: 120%;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .step-icon {
+            font-size: 2.5rem;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+        .step-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .step-card p {
+            color: var(--text-light);
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        /* Bank Info */
+        .bank-section {
+            padding: 60px 0 100px;
+            background: #0a0a0a;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .bank-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--primary-color);
+        }
+
+        .bank-logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .account-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 15px 0;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-logo">OTOP <span>PHRAE</span></div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">OTOP <span>PHRAE</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html" data-i18n="nav_home">หน้าแรก</a></li>
+                <li><a href="index.html#about" data-i18n="nav_about">เรื่องราวของเรา</a></li>
+                <li><a href="index.html#products" data-i18n="nav_products">รายการสินค้า</a></li>
+                <li><a href="reviews.html" data-i18n="nav_reviews">รีวิวสินค้า</a></li>
+                <li><a href="how-to-order.html" class="active" data-i18n="nav_howto">วิธีการสั่งซื้อ</a></li>
+                <li><a href="index.html#contact" data-i18n="nav_contact">ติดต่อเรา</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang-switch="th">TH</button>
+                    <button class="lang-btn" data-lang-switch="en">EN</button>
+                </div>
+                <div class="cart-action">
+                    <a href="cart.html" class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="page-header reveal">
+        <div class="container">
+            <h1 class="section-title" data-i18n="howto_title">วิธีการสั่งซื้อสินค้า</h1>
+            <p style="color: #aaa;" data-i18n="howto_subtitle">ขั้นตอนง่ายๆ ในการสั่งซื้อสินค้า OTOP
+                ส่งตรงถึงหน้าบ้านคุณ</p>
+        </div>
+    </header>
+
+    <!-- Steps Grid -->
+    <section class="steps-section">
+        <div class="container">
+            <div class="steps-container reveal">
+                <!-- Step 1 -->
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-icon"><i class="fas fa-search"></i></div>
+                    <h3 data-i18n="step1_title">เลือกสินค้า</h3>
+                    <p data-i18n="step1_desc">เลือกดูสินค้าที่คุณถูกใจจากหน้ารายการสินค้าของเรา</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-icon"><i class="fas fa-cart-plus"></i></div>
+                    <h3 data-i18n="step2_title">หยิบใส่ตะกร้า</h3>
+                    <p data-i18n="step2_desc">กดปุ่ม "เพิ่มลงตะกร้า" เพื่อรวบรวมสินค้าที่คุณต้องการ</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <h3 data-i18n="step3_title">ชำระเงิน</h3>
+                    <p data-i18n="step3_desc">ตรวจสอบรายการและโอนเงินผ่านบัญชีธนาคาร</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-icon"><i class="fas fa-upload"></i></div>
+                    <h3 data-i18n="step4_title">แจ้งชำระเงิน</h3>
+                    <p data-i18n="step4_desc">กรอกชื่อ-ที่อยู่จัดส่ง และแนบหลักฐานการโอนเงิน</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bank Info -->
+    <section class="bank-section reveal">
+        <div class="container">
+            <h2 class="section-title" data-i18n="bank_info_title">บัญชีธนาคารสำหรับโอนเงิน</h2>
+            <div class="bank-card">
+                <div class="bank-logo"><i class="fas fa-university"></i></div>
+                <h3 style="color:white; margin-bottom: 5px;">ธนาคาร กรุงไทย (Krungthai Bank)</h3>
+                <p style="color:#aaa;">สาขาแพร่</p>
+                <div class="account-number">0123456789</div>
+                <p style="color:white;">ชื่อบัญชี / Account Name: <strong>โอทอป แพร่ (Phrae OTOP)</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h3>Phrae OTOP</h3>
+                    <p data-i18n="footer_addr">ศูนย์จำหน่ายสินค้า OTOP จังหวัดแพร่</p>
+                    <p>Email: contact@phrae-otop.com</p>
+                    <p>Line: @otopphrae09</p>
+                </div>
+                <div class="footer-col" style="text-align: right;">
+                    <p>&copy; 2026 Phrae OTOP. All Rights Reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Widget -->
+    <div id="chat-widget-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/chat-widget.js"></script>
+    <script>
+        // Init scroll reveal if available
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.initScrollReveal) window.initScrollReveal();
+        });
+    </script>
+</body>
+
+</html>

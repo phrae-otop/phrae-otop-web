@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews - Phrae OTOP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <style>
+        .page-header {
+            padding: 140px 0 80px;
+            text-align: center;
+            background: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(230, 33, 41, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230, 33, 41, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 1;
+            pointer-events: none;
+        }
+
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        /* Review Grid */
+        .reviews-section {
+            padding: 80px 0;
+            background: var(--bg-color);
+            position: relative;
+            z-index: 1;
+        }
+
+        .reviews-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .review-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .review-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(230, 33, 41, 0.1);
+            border-color: rgba(230, 33, 41, 0.3);
+        }
+
+        .review-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 0;
+            background: var(--primary-color);
+            transition: 0.4s;
+        }
+
+        .review-card:hover::before {
+            height: 100%;
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .reviewer-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #333;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 10px rgba(230, 33, 41, 0.2);
+        }
+
+        .reviewer-info h3 {
+            font-size: 1.2rem;
+            margin: 0;
+            color: white;
+            font-weight: 600;
+        }
+
+        .reviewer-info .stars {
+            color: #FFD700;
+            font-size: 1rem;
+            margin-top: 5px;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+        }
+
+        .review-text {
+            color: #ccc;
+            line-height: 1.8;
+            font-weight: 300;
+            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .quote-icon {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            font-size: 6rem;
+            color: rgba(230, 33, 41, 0.05);
+            z-index: 0;
+            transition: 0.4s;
+        }
+
+        .review-card:hover .quote-icon {
+            color: rgba(230, 33, 41, 0.1);
+            transform: translateY(10px);
+        }
+
+        /* Review Form */
+        .review-form-section {
+            padding: 100px 0;
+            background: radial-gradient(circle at center, #0a0a0a 0%, var(--bg-color) 100%);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .review-form {
+            max-width: 650px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(15px);
+            padding: 50px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Kanit', sans-serif;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary-color);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 15px rgba(230, 33, 41, 0.2);
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Luxury Preloader -->
+    <div id="preloader">
+        <div class="loader-content">
+            <div class="loader-logo">OTOP <span>PHRAE</span></div>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Luxury Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">OTOP <span>PHRAE</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html" data-i18n="nav_home">หน้าแรก</a></li>
+                <li><a href="index.html#about" data-i18n="nav_about">เรื่องราวของเรา</a></li>
+                <li><a href="index.html#products" data-i18n="nav_products">รายการสินค้า</a></li>
+                <li><a href="reviews.html" class="active" data-i18n="nav_reviews">รีวิวสินค้า</a></li>
+                <li><a href="how-to-order.html" data-i18n="nav_howto">วิธีการสั่งซื้อ</a></li>
+                <li><a href="index.html#contact" data-i18n="nav_contact">ติดต่อเรา</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="lang-switcher">
+                    <button class="lang-btn active" data-lang-switch="th">TH</button>
+                    <button class="lang-btn" data-lang-switch="en">EN</button>
+                </div>
+                <div class="cart-action">
+                    <a href="cart.html" class="cart-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge">0</span>
+                    </a>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="page-header reveal">
+        <div id="particles-container" class="particles"></div>
+        <div class="container">
+            <h1 class="section-title" data-i18n="reviews_title">เสียงตอบรับจากลูกค้า</h1>
+            <p style="color: #aaa;" data-i18n="reviews_subtitle">ความประทับใจจริงจากผู้ที่ได้สัมผัสสินค้า OTOP เมืองแพร่
+            </p>
+        </div>
+    </header>
+
+    <!-- Reviews Grid -->
+    <section class="reviews-section">
+        <div class="container">
+            <div class="reviews-container reveal">
+                <!-- Mock Review 1 -->
+                <div class="review-card">
+                    <i class="fas fa-quote-right quote-icon"></i>
+                    <div class="review-header">
+                        <img src="https://ui-avatars.com/api/?name=Somchai+J&background=E62129&color=fff" alt="User"
+                            class="reviewer-avatar">
+                        <div class="reviewer-info">
+                            <h3>คุณสมชาย ใจดี</h3>
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-text">
+                        "เสื้อหม้อห้อมเนื้อผ้าดีมาก ใส่สบาย ไม่ร้อนเลยครับ การตัดเย็บประณีตมาก สั่งมา 3 ตัวแล้ว
+                        ประทับใจมากครับ แนะนำเลยสำหรับใครที่ชอบผ้าพื้นเมือง"
+                    </div>
+                </div>
+
+                <!-- Mock Review 2 -->
+                <div class="review-card">
+                    <i class="fas fa-quote-right quote-icon"></i>
+                    <div class="review-header">
+                        <img src="https://ui-avatars.com/api/?name=Anna+W&background=333&color=fff" alt="User"
+                            class="reviewer-avatar">
+                        <div class="reviewer-info">
+                            <h3>Ms. Anna Williams</h3>
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-text">
+                        "I love the Indigo Dyed Scarf! The color is so deep and beautiful. It feels very authentic and
+                        handmade. Shipping was surprisingly fast too."
+                    </div>
+                </div>
+
+                <!-- Mock Review 3 -->
+                <div class="review-card">
+                    <i class="fas fa-quote-right quote-icon"></i>
+                    <div class="review-header">
+                        <img src="https://ui-avatars.com/api/?name=Pim+S&background=E62129&color=fff" alt="User"
+                            class="reviewer-avatar">
+                        <div class="reviewer-info">
+                            <h3>คุณพิมพ์สิริ</h3>
+                            <div class="stars">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-text">
+                        "งานแกะสลักไม้สักละเอียดมากค่ะ เอาไปแต่งบ้านแล้วดูหรูหราขึ้นมาเลย
+                        ชอบความเป็นเอกลักษณ์ของเมืองแพร่ ขอบคุณแอดมินที่แนะนำดีมากๆ ค่ะ"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Review Form -->
+    <section class="review-form-section">
+        <div class="container">
+            <h2 class="section-title reveal" data-i18n="write_review">เขียนรีวิวของคุณ</h2>
+            <form class="review-form reveal" id="review-form">
+                <div class="form-group">
+                    <label data-i18n="form_name">ชื่อของคุณ</label>
+                    <input type="text" id="review-name" placeholder="ระบุชื่อของคุณ..." required>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="form_rating">ความพึงพอใจ</label>
+                    <select id="review-rating"
+                        style="width: 100%; padding: 12px; background: #151515; border: 1px solid #333; color: white; border-radius: 6px;">
+                        <option value="5">★★★★★ (ดีมาก)</option>
+                        <option value="4">★★★★☆ (ดี)</option>
+                        <option value="3">★★★☆☆ (ปานกลาง)</option>
+                        <option value="2">★★☆☆☆ (พอใช้)</option>
+                        <option value="1">★☆☆☆☆ (ควรปรับปรุง)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="form_message">ข้อความรีวิว</label>
+                    <textarea id="review-message" rows="4" placeholder="เล่าความประทับใจของคุณ..." required></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; border: none;">ส่งรีวิว</button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h3>Phrae OTOP</h3>
+                    <p data-i18n="footer_addr">ศูนย์จำหน่ายสินค้า OTOP จังหวัดแพร่</p>
+                    <p>Email: contact@phrae-otop.com</p>
+                    <p>Line: @otopphrae09</p>
+                </div>
+                <!-- ... Footer same as index ... -->
+                <div class="footer-col" style="text-align: right;">
+                    <p>&copy; 2026 Phrae OTOP. All Rights Reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Widget -->
+    <div id="chat-widget-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/chat-widget.js"></script>
+    <script src="js/reviews.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.initParticles) {
+                window.initParticles('particles-container', 20);
+            }
+        });
+    </script>
+</body>
+
+</html>
