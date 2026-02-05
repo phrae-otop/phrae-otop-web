@@ -1,5 +1,8 @@
-import { db, collection, getDocs, addDoc, query, where, doc, updateDoc, deleteDoc } from './firebase-config.js';
+// products.js - Refactored for Compat SDK
 
+const COLLECTION_NAME = 'products';
+
+// Initial Products Data (Fallback / Seed)
 const initialProducts = [
     {
         id: "1",
@@ -43,6 +46,7 @@ const initialProducts = [
         image: "assets/images/indigo-scarf.png"
     },
     {
+        id: "5",
         desc: 'ผ้าหม้อห้อมแท้จากแพร่ ย้อมสีธรรมชาติ ลวดลายเป็นเอกลักษณ์ เนื้อผ้านุ่มระบายอากาศได้ดี เหมาะสำหรับตัดเสื้อผ้าหรือทำของที่ระลึก',
         descEn: 'Authentic Mo Hom fabric from Phrae, natural indigo dyed with unique patterns. Soft & breathable, perfect for clothing.',
         image: 'assets/images/products/phrae-indigo-fabric-1769412290960.png',
@@ -51,7 +55,7 @@ const initialProducts = [
         stock: 50
     },
     {
-        id: '2',
+        id: '6',
         title: 'เซรามิกศิลาดล',
         titleEn: 'Celadon Ceramic Set',
         price: 2500,
@@ -63,7 +67,7 @@ const initialProducts = [
         stock: 20
     },
     {
-        id: '3',
+        id: '7',
         title: 'ตะกร้าหวายสานละเอียด',
         titleEn: 'Fine Woven Rattan Basket',
         price: 850,
@@ -75,7 +79,7 @@ const initialProducts = [
         stock: 35
     },
     {
-        id: '4',
+        id: '8',
         title: 'ยาสระผมสมุนไพรอัญชัน',
         titleEn: 'Butterfly Pea Herbal Shampoo',
         price: 150,
@@ -87,7 +91,7 @@ const initialProducts = [
         stock: 100
     },
     {
-        id: '5',
+        id: '9',
         title: 'แคบหมูเมืองแพร่',
         titleEn: 'Phrae Crispy Pork Rinds',
         price: 100,
@@ -99,7 +103,7 @@ const initialProducts = [
         stock: 200
     },
     {
-        id: '6',
+        id: '10',
         title: 'ผ้าไหมมัดหมี่',
         titleEn: 'Mudmee Silk Fabric',
         price: 3500,
@@ -113,8 +117,19 @@ const initialProducts = [
 ];
 
 // Check if Firestore is usable
-window.isFirestoreEnabled = typeof window.db !== 'undefined';
+// Wait for window.db to be initialized in firebase-config.js
+window.isFirestoreEnabled = false;
 
+// Function to check DB readiness
+const checkDB = () => {
+    if (typeof window.db !== 'undefined') {
+        window.isFirestoreEnabled = true;
+        // Try caching products immediately
+        window.getProducts();
+    }
+};
+
+// Seed Data Logic
 const seedProducts = async () => {
     if (!window.isFirestoreEnabled) return;
 
@@ -141,16 +156,18 @@ const seedProducts = async () => {
     }
 };
 
-// Seed on load if possible
-if (window.isFirestoreEnabled) {
-    seedProducts();
-} else {
-    // Retry once in case DB initializes late
-    setTimeout(() => {
-        window.isFirestoreEnabled = typeof window.db !== 'undefined';
-        if (window.isFirestoreEnabled) seedProducts();
-    }, 1000);
-}
+// Retry initialization
+const initProducts = () => {
+    checkDB();
+    if (window.isFirestoreEnabled) {
+        seedProducts();
+    } else {
+        setTimeout(initProducts, 500);
+    }
+};
+
+// Start init
+initProducts();
 
 // Global fetch function
 window.getProducts = async () => {
@@ -181,7 +198,5 @@ window.getProducts = async () => {
 
 // Save Products (Admin helper, mostly unused now as we write direct)
 window.saveProducts = async (products) => {
-    // This function was for LocalStorage. In Firestore, we update individually.
-    // Keeping for compatibility with old admin calls but warning.
     console.warn("saveProducts called but we are on Firestore. Should update docs individually.");
 };
