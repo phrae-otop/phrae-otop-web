@@ -1,0 +1,176 @@
+/* Order History Styles */
+.order-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: var(--transition);
+}
+
+.order-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(230, 33, 41, 0.3);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.order-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.order-date {
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.order-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.order-status.pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.order-status.paid {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.order-status.shipped {
+    background: rgba(23, 162, 184, 0.2);
+    color: #17a2b8;
+}
+
+.order-status.completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.order-status.cancelled {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.order-items {
+    margin-bottom: 15px;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: #ddd;
+    margin-bottom: 8px;
+}
+
+.order-total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+/* Flash Express Tracking Button */
+.btn-flash-tracking {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FFC400 0%, #FFD700 100%);
+    color: #000 !important;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 10px 25px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(255, 196, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+    font-family: 'Kanit', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-flash-tracking i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-flash-tracking:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(255, 196, 0, 0.6);
+    background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-flash-tracking:hover i {
+    transform: rotate(15deg) scale(1.2);
+}
+
+.btn-flash-tracking:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+/* Shine Effect */
+.btn-flash-tracking::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(to bottom right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.2) 40%,
+            rgba(255, 255, 255, 0.5) 50%,
+            rgba(255, 255, 255, 0.2) 60%,
+            rgba(255, 255, 255, 0) 100%);
+    transform: rotate(45deg);
+    transition: all 0.5s;
+    opacity: 0;
+}
+
+.btn-flash-tracking:hover::after {
+    left: 100%;
+    top: 100%;
+    opacity: 1;
+    transition: all 0.8s;
+}
+
+/* Pulse Animation for attention */
+@keyframes pulse-yellow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 196, 0, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 196, 0, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 196, 0, 0);
+    }
+}
+
+.btn-flash-tracking {
+    animation: pulse-yellow 2s infinite;
+}
