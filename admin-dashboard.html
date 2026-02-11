@@ -17,6 +17,11 @@
     <!-- Custom Luxury Cursor -->
     <div class="cursor-dot"></div>
     <div class="cursor-outline"></div>
+
+    <!-- Particle Background -->
+    <div id="dashboard-particles"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1;"></div>
+
     <div class="admin-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -63,7 +68,9 @@
                             <tr>
                                 <th>รูปภาพ</th>
                                 <th>ชื่อสินค้า (TH/EN)</th>
+                                <th>หมวดหมู่</th>
                                 <th>ราคา</th>
+                                <th>สต็อก</th>
                                 <th>การจัดการ</th>
                             </tr>
                         </thead>
@@ -100,22 +107,18 @@
                     <h2>ประวัติคำสั่งซื้อ (จัดส่งสำเร็จ)</h2>
                 </div>
                 <div class="stats-summary">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
+                    <div class="stat-card" data-tab-link="products">
+                        <i class="fas fa-box"></i>
                         <div class="stat-info">
-                            <h3 id="total-customers">0</h3>
-                            <p>ลูกค้าทั้งหมด</p>
+                            <h3 id="stat-products">0</h3>
+                            <p>สินค้าทั้งหมด</p>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-box-open"></i>
-                        </div>
+                    <div class="stat-card" data-tab-link="orders">
+                        <i class="fas fa-shopping-cart"></i>
                         <div class="stat-info">
-                            <h3 id="total-items">0</h3>
-                            <p>สินค้าที่จัดส่งแล้ว</p>
+                            <h3 id="stat-orders">0</h3>
+                            <p>คำสั่งซื้อใหม่</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -156,6 +159,7 @@
                                 <th>ชื่อผู้ใช้ (Username)</th>
                                 <th>อีเมล (Email)</th>
                                 <th>รหัสผ่าน (Password)</th>
+                                <th>ส่วนลด (Discount %)</th>
                                 <th>วันที่สมัคร (Joined Date)</th>
                                 <th>จัดการ (Actions)</th>
                             </tr>
@@ -302,6 +306,33 @@
         </main>
     </div>
 
+    <!-- History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px; width: 90%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 id="history-modal-title">ประวัติการสั่งซื้อ</h3>
+                <button onclick="document.getElementById('history-modal').style.display='none'"
+                    style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div class="table-container" style="max-height: 60vh; overflow-y: auto;">
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>เลขที่คำสั่งซื้อ</th>
+                            <th>วันที่</th>
+                            <th>สินค้า</th>
+                            <th>ยอดรวม</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-history-list">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Product Modal -->
     <div id="product-modal" class="modal">
         <div class="modal-content">
@@ -327,22 +358,52 @@
                     <textarea id="p-desc-en" rows="3" required></textarea>
                 </div>
                 <div class="input-row">
-                    <div class="input-group">
-                        <label>ราคา (บาท)</label>
-                        <input type="number" id="p-price" required>
+                    <div class="form-group">
+                        <label>ราคา (Price)</label>
+                        <input type="number" id="p-price" step="0.01" required>
                     </div>
-                    <div class="input-group">
-                        <label>สต็อก (จำนวนคงเหลือ)</label>
-                        <input type="number" id="p-stock" min="0" value="100" required>
+                    <div class="form-group">
+                        <label>หมวดหมู่ (Category)</label>
+                        <select id="p-category" required
+                            style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff;">
+                            <option value="textile">ผ้าทอ (Textile)</option>
+                            <option value="handicraft">เครื่องจักสาน (Handicraft)</option>
+                            <option value="ceramic">เซรามิก/ไม้ (Ceramic/Wood)</option>
+                            <option value="herbal">สมุนไพร/อาหาร (Herbal/Food)</option>
+                            <option value="jewelry">เครื่องประดับ (Jewelry)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>สต็อก (Stock)</label>
+                        <input type="number" id="p-stock" value="100" required>
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>URL รูปภาพ</label>
-                    <input type="text" id="p-image" placeholder="assets/images/..." required>
+                <div class="form-group">
+                    <label>รูปภาพสินค้า (Product Image)</label>
+                    <div class="image-upload-container" id="upload-container"
+                        onclick="document.getElementById('p-image-file').click()"
+                        style="border: 2px dashed rgba(212, 175, 55, 0.3); border-radius: 12px; height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: all 0.3s; position: relative; overflow: hidden;">
+                        <img id="p-image-preview" src=""
+                            style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                        <div id="upload-placeholder" style="text-align: center; color: #888;">
+                            <i class="fas fa-cloud-upload-alt"
+                                style="font-size: 3rem; margin-bottom: 10px; color: #ffd700;"></i>
+                            <p>คลิกเพื่อเลือกไฟล์รูปภาพ / Click to Select Photo</p>
+                            <span style="font-size: 0.8rem;">(แนะนำขนาด 800x800px)</span>
+                        </div>
+                    </div>
+
+                    <!-- Hidden technical fields -->
+                    <input type="text" id="p-image" required
+                        style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+                    <input type="file" id="p-image-file" accept="image/*" style="display: none;"
+                        onchange="handleProductImageUpload(this)">
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeProductModal()">ยกเลิก</button>
-                    <button type="submit" class="btn-primary">บันทึกสินค้า</button>
+                <div class="modal-actions" style="margin-top: 25px; gap: 10px;">
+                    <button type="button" class="btn-secondary" onclick="closeProductModal()"
+                        style="padding: 8px 20px; font-size: 0.9rem;">ยกเลิก</button>
+                    <button type="submit" id="save-product-btn" class="btn-primary"
+                        style="padding: 8px 25px; font-size: 0.9rem;">บันทึกสินค้า</button>
                 </div>
             </form>
         </div>

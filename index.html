@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/product-images.css">
 </head>
 
 <body>
@@ -203,7 +204,9 @@
         <div class="container">
             <h2 class="section-title reveal" data-i18n="section_products">รายการสินค้า</h2>
 
-            <div class="product-grid" id="main-product-grid">
+
+
+            <div id="main-product-grid">
                 <!-- Products will be dynamically loaded from js/products.js -->
                 <div class="loading">กำลังโหลดสินค้า... / Loading products...</div>
             </div>
@@ -211,11 +214,91 @@
     </section>
 
     <script>
+        // EMERGENCY INLINE PRODUCT RENDERING - Executes immediately
+        // This ensures products show even if external scripts have loading issues
+        const EMERGENCY_PRODUCTS = [
+            { id: "1", title: "เสื้อหม้อห้อม", titleEn: "Mo Hom Shirt", desc: "ผ้าฝ้ายย้อมสีธรรมชาติ ใส่สบาย ดีไซน์ทันสมัย", descEn: "Natural dyed cotton, comfortable, modern design", price: 450, stock: 100, isBestSeller: true, image: "assets/images/mohom-shirt-3.jpg" },
+            { id: "2", title: "ไม้สักแกะสลัก", titleEn: "Teak Wood Carving", desc: "ของแต่งบ้านมงคล จากไม้สักทองแท้", descEn: "Auspicious home decor from genuine golden teak", price: 1200, stock: 100, image: "assets/images/teak-carving.jpg" },
+            { id: "3", title: "กระเป๋าผ้าด้นมือ", titleEn: "Hand-stitched Cloth Bag", desc: "งานฝีมือละเอียด เอกลักษณ์เฉพาะตัว", descEn: "Detailed craftsmanship, unique identity", price: 350, stock: 100, image: "assets/images/stitched-bag.jpg" },
+            { id: "4", title: "ผ้าพันคอย้อมคราม", titleEn: "Indigo Dyed Scarf", desc: "นุ่มนวล อ่อนโยน ปลอดภัยไร้สารเคมี", descEn: "Soft, gentle, safe without chemicals", price: 250, stock: 100, image: "assets/images/indigo-scarf.png" },
+            { id: "5", title: "น้ำผึ้งป่าเดือนห้า", titleEn: "Wild Forest Honey", price: 280, desc: "น้ำผึ้งแท้จากธรรมชาติ พรีเมียม ออร์แกนิก รสชาติหวานกลมกล่อม", descEn: "Pure natural honey, premium organic quality with rich smooth taste.", image: "assets/images/wild-honey.png", stock: 50 },
+            { id: "6", title: "กระเป๋าสานจากไม้ไผ่", titleEn: "Bamboo Woven Bag", price: 380, desc: "งานสานประณีต ดีไซน์ทันสมัย ใช้งานทนทาน ผลิตจากไม้ไผ่ธรรมชาติ", descEn: "Exquisite weaving, modern design, durable, made from natural bamboo.", image: "assets/images/bamboo-bag.png", stock: 30 },
+            { id: "7", title: "แซคหม้อห้อม", titleEn: "Mo Hom Dress", price: 550, desc: "ชุดแซคยอดฮิต ผ้าหม้อห้อมแท้ ใส่สวย ระบายอากาศดี", descEn: "Popular Mo Hom dress, authentic fabric, beautiful fit, and breathable.", image: "assets/images/แซคหม้อห้อม-2.jpg", stock: 25 },
+            { id: "8", title: "ผ้าไหมมัดหมี่", titleEn: "Mudmee Silk", price: 1200, desc: "ผ้าไหมมัดหมี่ทอมือ ลวดลายโบราณอันวิจิตรบรรจง", descEn: "Handwoven Mudmee silk with exquisite ancient patterns.", image: "assets/images/mudmee-silk.jpg", stock: 15 }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('main-product-grid');
+            if (!grid) return;
+
+            // Render immediately with emergency data
+            const renderEmergency = () => {
+                const lang = localStorage.getItem('preferredLang') || 'th';
+                const html = EMERGENCY_PRODUCTS.map(p => `
+                    <div class="product-card" style="opacity: 1; transform: none;">
+                        <div class="product-img">
+                            <img src="${p.image}" alt="${p.title}" onerror="this.src='assets/images/placeholder.png'">
+                            ${p.isBestSeller ? '<div class="best-seller-badge">ขายดี (Best Seller)</div>' : ''}
+                            ${(p.stock || 0) === 0 ? '<div class="out-of-stock-badge">สินค้าหมด</div>' : `<div class="stock-badge ${(p.stock || 0) < 10 ? 'low-stock' : ''}">เหลือ ${p.stock || 0} ชิ้น</div>`}
+                        </div>
+                        <div class="product-info">
+                            <h3>${lang === 'th' ? p.title : p.titleEn}</h3>
+                            <p>${lang === 'th' ? p.desc : p.descEn}</p>
+                            <div class="product-bottom">
+                                <span class="price">฿${p.price.toLocaleString()}</span>
+                                <button class="add-to-cart-btn" data-product-id="${p.id}" data-product-price="${p.price}">เพิ่มลงตะกร้า</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                grid.innerHTML = `<div class="product-grid">${html}</div>`;
+
+                // Re-bind cart events if available
+                if (window.bindCartEvents) window.bindCartEvents();
+                if (window.initScrollReveal) window.initScrollReveal();
+            };
+
+            // Render immediately
+            renderEmergency();
+
+            // Store for external scripts to use
+            window.EMERGENCY_PRODUCTS = EMERGENCY_PRODUCTS;
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.initParticles) {
                 window.initParticles('products-particles', 30);
             }
         });
+
+        // FAILSAFE PRELOADER REMOVAL
+        // If the main app.js fails to remove the preloader, this will do it after 3 seconds
+        window.addEventListener('load', () => {
+            // REMOVED: localStorage.removeItem('otop_products_cache');
+            // This was causing race conditions and image disappearance. 
+            // We now rely on products.js to manage the cache lifecycle.
+
+            setTimeout(() => {
+                const preloader = document.getElementById('preloader');
+                if (preloader) {
+                    preloader.style.opacity = '0';
+                    setTimeout(() => {
+                        preloader.style.display = 'none';
+                    }, 500);
+                }
+            }, 3000); // Wait 3 seconds max
+        });
+
+        // Backup timeout in case window.load never fires (e.g. broken image)
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            if (preloader && preloader.style.display !== 'none') {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 500);
+            }
+        }, 5000); // 5 seconds absolute max
     </script>
 
     <!-- Contact Section -->
