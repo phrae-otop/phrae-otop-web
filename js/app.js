@@ -62,6 +62,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             footer_follow: 'ติดตามข่าวสาร',
             search_placeholder: 'ค้นหาสินค้า...',
             add_to_cart: 'เพิ่มลงตะกร้า',
+            cat_textile: 'ผ้าทอเมืองแพร่ (Textile)',
+            cat_woodwork: 'งานไม้สักทอง (Teak Wood)',
+            cat_handicraft: 'เครื่องจักสาน (Handicraft)',
+            cat_herbal: 'สมุนไพรและอาหาร (Herbal & Food)',
+            cat_ceramic: 'เครื่องปั้นดินเผา (Ceramics)',
+            cat_other: 'สินค้าอื่นๆ (Others)',
             cart_title: 'ตะกร้าสินค้าของคุณ',
             cart_empty: 'ตะกร้าของคุณยังว่างอยู่',
             cart_total: 'ยอดรวมทั้งหมด',
@@ -98,6 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             nav_home: 'Home',
             nav_about: 'About',
             nav_products: 'Products',
+            cat_textile: 'Phrae Textile',
+            cat_woodwork: 'Teak Woodwork',
+            cat_handicraft: 'Local Handicraft',
+            cat_herbal: 'Herbal & Food',
+            cat_ceramic: 'Ceramics',
+            cat_other: 'Other Products',
             nav_reviews: 'Reviews',
             nav_howto: 'How to Order',
             nav_contact: 'Contact',
@@ -182,70 +194,168 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // PRODUCT RENDERING LOGIC
     const productGrid = document.getElementById('main-product-grid');
+    let currentCategory = 'all'; // Default category
 
-    const renderProducts = async (searchTerm = '') => {
+    const renderProducts = async (searchTerm = '', category = currentCategory) => {
         if (!productGrid) return;
 
-        let products = window.getProducts ? await window.getProducts() : [];
-        if (!Array.isArray(products)) products = [];
+        try {
+            let products = [];
 
-        const lang = localStorage.getItem('preferredLang') || 'th';
+            // Robust check for data source
+            if (typeof window.getProducts === 'function') {
+                products = await window.getProducts();
+            } else {
+                console.warn('window.getProducts not found, using empty array');
+                // Optional: Try to load from local variable if accessible, but products.js should handle this
+            }
 
-        const filteredProducts = products.filter(p => {
-            const title = (lang === 'th' ? p.title : p.titleEn).toLowerCase();
-            const desc = (lang === 'th' ? p.desc : p.descEn).toLowerCase();
-            const term = searchTerm.toLowerCase().trim();
-            return title.includes(term) || desc.includes(term);
-        });
+            if (!Array.isArray(products)) products = [];
 
-        if (filteredProducts.length === 0) {
-            productGrid.innerHTML = `<div class="no-products" style="grid-column: 1/-1; text-align: center; padding: 50px;">
-                ${lang === 'th' ? 'ไม่พบสินค้าที่ตรงกับคำค้นหา' : 'No products found matching your search.'}
-            </div>`;
-            return;
-        }
+            const lang = localStorage.getItem('preferredLang') || 'th';
 
-        productGrid.innerHTML = filteredProducts.map(p => {
-            const stock = p.stock || 0;
-            const isOutOfStock = stock === 0;
-            const isLowStock = stock > 0 && stock < 10;
+            // Deduplicate products based on ID
+            const uniqueProducts = Array.from(new Map(products.map(item => [item.id, item])).values());
 
-            return `
-            <div class="product-card reveal">
-                <div class="product-img">
-                    <img src="${p.image}" alt="${lang === 'th' ? p.title : p.titleEn}">
-                    ${p.isBestSeller ? '<div class="best-seller-badge">ขายดี (Best Seller)</div>' : ''}
-                    ${isOutOfStock ? '<div class="out-of-stock-badge">สินค้าหมด</div>' : ''}
-                    ${isLowStock ? `<div class="stock-badge low-stock">เหลือ ${stock} ชิ้น</div>` : ''}
-                    ${!isOutOfStock && !isLowStock && stock < 50 ? `<div class="stock-badge">เหลือ ${stock} ชิ้น</div>` : ''}
-                </div>
-                <div class="product-info">
-                    <h3>${lang === 'th' ? p.title : p.titleEn}</h3>
-                    <p>${lang === 'th' ? p.desc : p.descEn}</p>
-                    <div class="product-bottom">
-                        <span class="price">฿${p.price.toLocaleString()}</span>
-                        <button class="add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}" 
-                                data-product-id="${p.id}" 
-                                data-product-price="${p.price}"
-                                ${isOutOfStock ? 'disabled' : ''}
-                                data-i18n="add_to_cart">${isOutOfStock ? (lang === 'th' ? 'สินค้าหมด' : 'Out of Stock') : translations[lang].add_to_cart}</button>
+            const filteredProducts = uniqueProducts.filter(p => {
+                // Add null safety checks to prevent toLowerCase() errors
+                const title = (lang === 'th' ? (p.title || '') : (p.titleEn || '')).toLowerCase();
+                const desc = (lang === 'th' ? (p.desc || '') : (p.descEn || '')).toLowerCase();
+                const term = searchTerm.toLowerCase().trim();
+                const matchesSearch = title.includes(term) || desc.includes(term);
+
+                // Category Filter
+                const matchesCategory = category === 'all' || (p.category && p.category === category);
+
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filteredProducts.length === 0) {
+                productGrid.innerHTML = `<div class="no-products" style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                    ${lang === 'th' ? 'ไม่พบสินค้าที่ตรงกับคำค้นหา' : 'No products found matching your search.'}
+                </div>`;
+                return;
+            }
+
+
+            // NEW: Section-Based Rendering for "All" Category
+            if (category === 'all' && searchTerm === '') {
+                // Group products by category
+                const groups = {};
+                filteredProducts.forEach(p => {
+                    const cat = p.category || 'other';
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(p);
+                });
+
+                // Helper to create card HTML
+                const createCard = (p) => {
+                    const stock = p.stock || 0;
+                    const isOutOfStock = stock === 0;
+                    const isLowStock = stock > 0 && stock < 10;
+                    const imageSrc = p.image || 'assets/images/placeholder.png';
+
+                    return `
+                    <div class="product-card reveal">
+                        <div class="product-img">
+                            <img src="${imageSrc}" alt="${lang === 'th' ? p.title : p.titleEn}" onerror="this.src='assets/images/placeholder.png'">
+                            ${p.isBestSeller ? '<div class="best-seller-badge">ขายดี (Best Seller)</div>' : ''}
+                            ${isOutOfStock ? '<div class="out-of-stock-badge">สินค้าหมด</div>' : ''}
+                            ${!isOutOfStock ? `<div class="stock-badge ${isLowStock ? 'low-stock' : ''}">เหลือ ${stock} ชิ้น</div>` : ''}
+                        </div>
+                        <div class="product-info">
+                            <h3>${lang === 'th' ? p.title : p.titleEn}</h3>
+                            <p>${lang === 'th' ? p.desc : p.descEn}</p>
+                            <div class="product-bottom">
+                                <span class="price">฿${(p.price ? p.price.toLocaleString() : '0')}</span>
+                                <button class="add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}" 
+                                        data-product-id="${p.id}" 
+                                        data-product-price="${p.price || 0}"
+                                        ${isOutOfStock ? 'disabled' : ''}
+                                        data-i18n="add_to_cart">${isOutOfStock ? (lang === 'th' ? 'สินค้าหมด' : 'Out of Stock') : translations[lang].add_to_cart}</button>
+                            </div>
+                        </div>
+                    </div>`;
+                };
+
+                // Define Display Order
+                const displayOrder = ['textile', 'woodwork', 'handicraft', 'herbal', 'ceramic', 'other'];
+                const sortedCategories = Object.keys(groups).sort((a, b) => {
+                    return displayOrder.indexOf(a) - displayOrder.indexOf(b);
+                });
+
+                productGrid.innerHTML = sortedCategories.map(cat => {
+                    const catProducts = groups[cat];
+                    const catKey = `cat_${cat}`;
+                    const catName = translations[lang][catKey] || (cat.charAt(0).toUpperCase() + cat.slice(1));
+
+                    return `
+                        <div class="category-section" style="margin-bottom: 40px;">
+                            <h3 class="category-header" style="
+                                font-size: 1.5rem; 
+                                margin-bottom: 20px; 
+                                border-left: 5px solid var(--primary-color); 
+                                padding-left: 15px;
+                                color: var(--text-main);
+                            ">${catName}</h3>
+                            <div class="product-grid">
+                                ${catProducts.map(p => createCard(p)).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } else {
+                // FALLBACK: Standard Grid (Filtering or Searching)
+                productGrid.innerHTML = `<div class="product-grid">` + filteredProducts.map(p => {
+                    const stock = p.stock || 0;
+                    const isOutOfStock = stock === 0;
+                    const isLowStock = stock > 0 && stock < 10;
+                    const imageSrc = p.image || 'assets/images/placeholder.png';
+
+                    return `
+                    <div class="product-card reveal">
+                        <div class="product-img">
+                            <img src="${imageSrc}" alt="${lang === 'th' ? p.title : p.titleEn}" onerror="this.src='assets/images/placeholder.png'">
+                            ${p.isBestSeller ? '<div class="best-seller-badge">ขายดี (Best Seller)</div>' : ''}
+                            ${isOutOfStock ? '<div class="out-of-stock-badge">สินค้าหมด</div>' : ''}
+                            ${!isOutOfStock ? `<div class="stock-badge ${isLowStock ? 'low-stock' : ''}">เหลือ ${stock} ชิ้น</div>` : ''}
+                        </div>
+                        <div class="product-info">
+                            <h3>${lang === 'th' ? p.title : p.titleEn}</h3>
+                            <p>${lang === 'th' ? p.desc : p.descEn}</p>
+                            <div class="product-bottom">
+                                <span class="price">฿${(p.price ? p.price.toLocaleString() : '0')}</span>
+                                <button class="add-to-cart-btn ${isOutOfStock ? 'disabled' : ''}" 
+                                        data-product-id="${p.id}" 
+                                        data-product-price="${p.price || 0}"
+                                        ${isOutOfStock ? 'disabled' : ''}
+                                        data-i18n="add_to_cart">${isOutOfStock ? (lang === 'th' ? 'สินค้าหมด' : 'Out of Stock') : translations[lang].add_to_cart}</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        `}).join('');
+                `}).join('') + `</div>`;
+            }
 
-        // Re-bind cart events since buttons are new
-        if (window.bindCartEvents) window.bindCartEvents();
+            // Re-bind cart events since buttons are new
+            if (window.bindCartEvents) window.bindCartEvents();
 
-        // Re-init scroll reveal for new elements
-        if (window.initScrollReveal) window.initScrollReveal();
+            // Re-init scroll reveal for new elements
+            if (window.initScrollReveal) window.initScrollReveal();
+
+        } catch (error) {
+            console.error("Render Error:", error);
+            productGrid.innerHTML = `<div class="error-products" style="grid-column: 1/-1; text-align: center; padding: 50px; color: red;">
+                ไม่สามารถโหลดสินค้าได้ / Failed to load products: <br> ${error.message}
+            </div>`;
+        }
     };
 
     // SEARCH LOGIC
     const searchInput = document.getElementById('product-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            renderProducts(e.target.value);
+            renderProducts(e.target.value, currentCategory);
 
             // Auto-scroll to products section when searching
             if (e.target.value.trim() !== '') {
@@ -260,6 +370,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // CATEGORY FILTER LOGIC
+    const categoryBtns = document.querySelectorAll('.category-btn');
+    categoryBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active state
+            categoryBtns.forEach(b => b.classList.remove('active'));
+            categoryBtns.forEach(b => {
+                b.style.background = 'rgba(255,255,255,0.1)';
+                b.style.color = '#fff';
+            });
+
+            btn.classList.add('active');
+            btn.style.background = 'var(--primary-color)';
+            btn.style.color = '#000';
+
+            // Update category and render
+            currentCategory = btn.getAttribute('data-category');
+            const currentSearch = searchInput ? searchInput.value : '';
+            renderProducts(currentSearch, currentCategory);
+        });
+    });
 
     // Initialize Products
     renderProducts();

@@ -14,14 +14,57 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const renderOrders = () => {
+    const renderOrders = async () => {
         if (!ordersList) return;
+        ordersList.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">กำลังโหลดข้อมูล... / Loading...</div>';
 
-        const allOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
+        let userOrders = [];
 
-        // Filter orders for current user by ID
-        // Also support potential backward compatibility or simple matching if needed, but ID is best
-        const userOrders = allOrders.filter(order => order.userId === currentUser.id);
+        console.log('🔍 [Order History Debug] Starting order fetch...');
+        console.log('👤 Current User ID:', currentUser.id);
+        console.log('🔥 Firestore Available:', typeof window.db !== 'undefined');
+
+        try {
+            // 1. Try fetching from Firestore
+            if (typeof window.db !== 'undefined') {
+                console.log('📡 Fetching from Firestore...');
+                const snapshot = await window.db.collection('orders')
+                    .where('userId', '==', currentUser.id)
+                    .orderBy('createdAt', 'desc') // Ensure indexing or use date
+                    .get();
+
+                console.log('📦 Firestore snapshot size:', snapshot.size);
+
+                if (!snapshot.empty) {
+                    userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log('✅ Orders fetched from Firestore:', userOrders.length);
+                } else {
+                    console.log('⚠️ Firestore returned empty - no orders found for this user');
+                }
+            } else {
+                // Fallback to LocalStorage
+                console.log('💾 Firestore not available, using LocalStorage...');
+                const allOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
+                userOrders = allOrders.filter(order => order.userId === currentUser.id);
+                console.log('📋 Orders from LocalStorage:', userOrders.length);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching orders:", error);
+            // Fallback on error (e.g. index missing)
+            try {
+                console.log('🔄 Retrying without orderBy...');
+                const snapshot = await window.db.collection('orders').where('userId', '==', currentUser.id).get();
+                userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Client-side sort
+                userOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+                console.log('✅ Orders fetched (retry):', userOrders.length);
+            } catch (innerError) {
+                console.error("❌ Retry failed, falling back to LocalStorage:", innerError);
+                const allOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
+                userOrders = allOrders.filter(order => order.userId === currentUser.id);
+                console.log('💾 Final fallback - LocalStorage orders:', userOrders.length);
+            }
+        }
 
         if (userOrders.length === 0) {
             ordersList.innerHTML = `
@@ -34,15 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Sort by date new to old (assuming order in array is already new-to-old due to unshift, but good to be sure if date logic changes)
-        // Since we split by unshift in cart.js, index 0 is newest.
-
         ordersList.innerHTML = userOrders.map(order => `
             <div class="order-card">
                 <div class="order-header">
                     <div>
-                        <h3>คำสั่งซื้อ #${order.id.slice(-6)}</h3>
-                        <span class="order-date">${order.date}</span>
+                        <h3>คำสั่งซื้อ #${order.id.slice(0, 8)}...</h3>
+                        <span class="order-date">${order.displayDate || order.date}</span>
                     </div>
                     <div class="order-status ${order.status}">${getStatusText(order.status)}</div>
                 </div>
@@ -54,9 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `).join('')}
                 </div>
-                <div class="order-total">
-                    <span>ยอดสุทธิ / Total</span>
-                    <span>฿${(order.total || 0).toLocaleString()}</span>
+                <div class="order-footer">
+                    <div class="order-total-row" style="display:flex; justify-content:space-between; width:100%;">
+                         <span>ยอดสุทธิ / Total</span>
+                         <span style="color: var(--primary-color); font-weight:bold;">฿${(order.total || 0).toLocaleString()}</span>
+                    </div>
                 </div>
                 ${order.trackingNumber ? `
                     <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1); text-align:right;">
@@ -88,6 +130,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // PASSWORD CHANGE LOGIC
     const passwordForm = document.getElementById('change-password-form');
     if (passwordForm) {
+        // Display user info
+        document.getElementById('profile-name').textContent = currentUser.username;
+        document.getElementById('profile-email').textContent = currentUser.email;
+        document.getElementById('edit-username').value = currentUser.username;
+        document.getElementById('edit-email').value = currentUser.email;
+
+        // Display discount if user has one
+        const allUsers = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        const fullUserData = allUsers.find(u => u.id === currentUser.id);
+
+        if (fullUserData && fullUserData.discount && fullUserData.discount > 0) {
+            const discountSection = document.getElementById('discount-display-section');
+            const discountPercentage = document.getElementById('discount-percentage');
+
+            if (discountSection && discountPercentage) {
+                discountSection.style.display = 'block';
+                discountPercentage.textContent = `${fullUserData.discount}%`;
+            }
+        }
+
+        // Tab Switching Logic
+        const menuLinks = document.querySelectorAll('.account-menu a[data-section]');
+
         passwordForm.addEventListener('submit', (e) => {
             e.preventDefault();
 

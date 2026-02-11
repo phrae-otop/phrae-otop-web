@@ -77,6 +77,9 @@ const Auth = {
         if (user) {
             authItem.innerHTML = `
                 <div class="user-menu">
+                    <a href="account.html?tab=orders" class="history-btn" title="ประวัติการสั่งซื้อ (Order History)" style="margin-right:5px; color:#fff;">
+                        <i class="fas fa-history"></i>
+                    </a>
                     <a href="account.html" class="user-btn">
                         <i class="fas fa-user-circle"></i>
                         <span>${user.username}</span>

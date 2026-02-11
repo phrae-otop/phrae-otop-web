@@ -13,6 +13,7 @@ const initialProducts = [
         price: 450,
         stock: 100,
         isBestSeller: true,
+        category: "textile",
         image: "assets/images/mohom-shirt-3.jpg"
     },
     {
@@ -23,6 +24,7 @@ const initialProducts = [
         descEn: "Auspicious home decor from genuine golden teak",
         price: 1200,
         stock: 100,
+        category: "woodwork",
         image: "assets/images/teak-carving.jpg"
     },
     {
@@ -33,6 +35,7 @@ const initialProducts = [
         descEn: "Detailed craftsmanship, unique identity",
         price: 350,
         stock: 100,
+        category: "handicraft",
         image: "assets/images/stitched-bag.jpg"
     },
     {
@@ -43,76 +46,52 @@ const initialProducts = [
         descEn: "Soft, gentle, safe without chemicals",
         price: 250,
         stock: 100,
+        category: "textile",
         image: "assets/images/indigo-scarf.png"
     },
     {
         id: "5",
-        desc: 'ผ้าหม้อห้อมแท้จากแพร่ ย้อมสีธรรมชาติ ลวดลายเป็นเอกลักษณ์ เนื้อผ้านุ่มระบายอากาศได้ดี เหมาะสำหรับตัดเสื้อผ้าหรือทำของที่ระลึก',
-        descEn: 'Authentic Mo Hom fabric from Phrae, natural indigo dyed with unique patterns. Soft & breathable, perfect for clothing.',
-        image: 'assets/images/products/phrae-indigo-fabric-1769412290960.png',
-        category: 'textile',
-        rating: 5,
-        stock: 50
+        title: "น้ำผึ้งป่าเดือนห้า",
+        titleEn: "Wild Forest Honey",
+        price: 280,
+        desc: "น้ำผึ้งแท้จากธรรมชาติ พรีเมียม ออร์แกนิก รสชาติหวานกลมกล่อม",
+        descEn: "Pure natural honey, premium organic quality with rich smooth taste.",
+        image: "assets/images/wild-honey.png",
+        stock: 50,
+        category: "herbal"
     },
     {
-        id: '6',
-        title: 'เซรามิกศิลาดล',
-        titleEn: 'Celadon Ceramic Set',
-        price: 2500,
-        desc: 'ชุดน้ำชาเซรามิกเคลือบเขียวไข่กา (Celadon) ฝีมือช่างแพร่ ลวดลายแตกลายงาตามธรรมชาติ สวยงามและทนทาน',
-        descEn: 'Exquisite Celadon tea set with signaturecrackled glaze. Handcrafted by master artisans in Phrae.',
-        image: 'assets/images/products/lanna-ceramic.png',
-        category: 'ceramic',
-        rating: 4.8,
-        stock: 20
+        id: "6",
+        title: "กระเป๋าสานจากไม้ไผ่",
+        titleEn: "Bamboo Woven Bag",
+        price: 380,
+        desc: "งานสานประณีต ดีไซน์ทันสมัย ใช้งานทนทาน ผลิตจากไม้ไผ่ธรรมชาติ",
+        descEn: "Exquisite weaving, modern design, durable, made from natural bamboo.",
+        image: "assets/images/bamboo-bag.png",
+        stock: 30,
+        category: "handicraft"
     },
     {
-        id: '7',
-        title: 'ตะกร้าหวายสานละเอียด',
-        titleEn: 'Fine Woven Rattan Basket',
-        price: 850,
-        desc: 'งานจักสานหวายคุณภาพสูง ลวดลายละเอียด แข็งแรง ทนทาน ใบใหญ่เหมาะสำหรับใส่ของหรือตกแต่งบ้าน',
-        descEn: 'High-quality finely woven rattan basket. Durable and stylish, great for storage or home decor.',
-        image: 'assets/images/products/rattan-basket.png',
-        category: 'craft',
-        rating: 4.7,
-        stock: 35
+        id: "7",
+        title: "แซคหม้อห้อม",
+        titleEn: "Mo Hom Dress",
+        price: 550,
+        desc: "ชุดแซคยอดฮิต ผ้าหม้อห้อมแท้ ใส่สวย ระบายอากาศดี",
+        descEn: "Popular Mo Hom dress, authentic fabric, beautiful fit, and breathable.",
+        image: "assets/images/แซคหม้อห้อม-2.jpg",
+        stock: 25,
+        category: "textile"
     },
     {
-        id: '8',
-        title: 'ยาสระผมสมุนไพรอัญชัน',
-        titleEn: 'Butterfly Pea Herbal Shampoo',
-        price: 150,
-        desc: 'แชมพูสมุนไพรสูตรโบราณ ผสมดอกอัญชัน ช่วยให้ผมดกดำ เงางาม ลดผมร่วง ปราศจากสารเคมี',
-        descEn: 'Traditional herbal shampoo ensuring healthy, shiny, and black hair. Chemical-free.',
-        image: 'assets/images/products/butterfly-shampoo.png',
-        category: 'herbal',
-        rating: 4.5,
-        stock: 100
-    },
-    {
-        id: '9',
-        title: 'แคบหมูเมืองแพร่',
-        titleEn: 'Phrae Crispy Pork Rinds',
-        price: 100,
-        desc: 'แคบหมูสูตรเด็ด กรอบอร่อย ไม่อมน้ำมัน ทานคู่กับน้ำพริกหนุ่มเข้ากันสุดๆ ของฝากยอดฮิต',
-        descEn: 'Famous crispy pork rinds from Phrae. Perfect snack or side dish with chili paste.',
-        image: 'assets/images/products/crispy-pork.jpg',
-        category: 'food',
-        rating: 4.9,
-        stock: 200
-    },
-    {
-        id: '10',
-        title: 'ผ้าไหมมัดหมี่',
-        titleEn: 'Mudmee Silk Fabric',
-        price: 3500,
-        desc: 'ผ้าไหมมัดหมี่ทอมือ ลวดลายวิจิตรบรรจง สะท้อนวัฒนธรรมล้านนา เหมาะสำหรับงานพิธีการ',
-        descEn: 'Handwoven Mudmee silk with intricate patterns reflecting Lanna culture. Ideal for formal wear.',
-        image: 'assets/images/products/mudmee-silk.jpg',
-        category: 'textile',
-        rating: 5,
-        stock: 15
+        id: "8",
+        title: "ผ้าไหมมัดหมี่",
+        titleEn: "Mudmee Silk",
+        price: 1200,
+        desc: "ผ้าไหมมัดหมี่ทอมือ ลวดลายโบราณอันวิจิตรบรรจง",
+        descEn: "Handwoven Mudmee silk with exquisite ancient patterns.",
+        image: "assets/images/mudmee-silk.jpg",
+        stock: 15,
+        category: "textile"
     }
 ];
 
@@ -122,29 +101,81 @@ window.isFirestoreEnabled = false;
 // Global fetch function (Moved UP to prevent hoisting issues)
 window.getProducts = async () => {
     // Try Firestore first
-    if (window.isFirestoreEnabled && window.db) {
+    if (window.db) {
         try {
-            const snapshot = await window.db.collection(COLLECTION_NAME).get();
-            const products = [];
-            snapshot.forEach(doc => {
-                products.push({ id: doc.id, ...doc.data() });
+            const snapshot = await window.db.collection(COLLECTION_NAME).orderBy("updatedAt", "desc").get().catch(async (err) => {
+                console.warn("Sorting failed, trying without order:", err);
+                return await window.db.collection(COLLECTION_NAME).get();
             });
 
-            // Cache
-            localStorage.setItem('otop_products_cache', JSON.stringify(products));
+            const products = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // REFINED SANITY CHECK: Only apply fallback if image is TRULY missing or broken
+                const isImageInvalid = !data.image || data.image === "" || data.image === "undefined" || data.image.includes('undefined');
 
-            return products.length > 0 ? products : initialProducts;
+                if (isImageInvalid) {
+                    const fallback = initialProducts.find(p => p.id === doc.id);
+                    data.image = fallback ? fallback.image : 'assets/images/placeholder.png';
+                }
+
+                products.push({ id: doc.id, ...data });
+            });
+
+            if (products.length > 0) {
+                try {
+                    localStorage.setItem('otop_products_cache', JSON.stringify(products));
+                } catch (cacheError) {
+                    console.warn("LocalStorage Quota Exceeded. Clearing old cache...", cacheError);
+                    try {
+                        localStorage.clear();
+                        localStorage.setItem('otop_products_cache', JSON.stringify(products));
+                    } catch (retryError) {
+                        console.error("Failed to cache products even after clear:", retryError);
+                    }
+                }
+                return products;
+            }
         } catch (error) {
             console.error("Firestore Fetch Error:", error);
+            if (!window.hasAlertedFirestoreError) {
+                alert(`ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (Using Offline Data)\nError: ${error.message}\n\nกรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือ API Key`);
+                window.hasAlertedFirestoreError = true;
+            }
+        }
+    } else {
+        console.warn("window.db is undefined");
+        // Don't alert here to avoid noise if just loading offline
+    }
+
+    // Fallback to cache or hardcoded initial products
+    const cached = localStorage.getItem('otop_products_cache');
+    if (cached) {
+        try {
+            return JSON.parse(cached);
+        } catch (e) {
+            localStorage.removeItem('otop_products_cache');
         }
     }
 
-    // Fallback to cache
-    const cached = localStorage.getItem('otop_products_cache');
-    if (cached) return JSON.parse(cached);
-
     return initialProducts;
 };
+
+// Debug Helper
+window.debugFirestore = async () => {
+    if (!window.db) {
+        alert("Firestore (window.db) is not initialized!");
+        return;
+    }
+    try {
+        console.log("Attempting to connect to 'products'...");
+        const snapshot = await window.db.collection('products').limit(1).get();
+        alert(`Connection Successful! Found ${snapshot.size} docs in 'products'.`);
+    } catch (e) {
+        alert(`Connection Failed: ${e.message}`);
+    }
+};
+
 
 // Seed Data Logic (Also moved up)
 const seedProducts = async () => {
@@ -157,7 +188,8 @@ const seedProducts = async () => {
             const batch = window.db.batch();
 
             initialProducts.forEach(product => {
-                const docRef = window.db.collection(COLLECTION_NAME).doc();
+                // Use product ID as document ID to prevent duplicates
+                const docRef = window.db.collection(COLLECTION_NAME).doc(product.id);
                 batch.set(docRef, {
                     ...product,
                     createdAt: new Date().toISOString()
@@ -165,31 +197,110 @@ const seedProducts = async () => {
             });
 
             await batch.commit();
-            console.log('Seeding complete!');
-            window.location.reload();
+            console.log('Initial seeding complete!');
+            // Removed reload to prevent infinite loops, UI will refresh on next interaction or manual reload
+        } else {
+            console.log('Firestore already contains data. Skipping overwrite to prevent losing updates.');
         }
     } catch (error) {
-        console.error("Error seeding products: ", error);
+        console.error("Error checking/seeding products: ", error);
     }
 };
+
+// Database Cleanup & Factory Reset Tool
+window.fixDatabase = async () => {
+    if (!window.isFirestoreEnabled) return;
+
+    console.log('Running Hard Factory Reset...');
+    try {
+        const snapshot = await window.db.collection(COLLECTION_NAME).get();
+        const batch = window.db.batch();
+        let changeCount = 0;
+
+        // 1. Force overwrite IDs 1-8 with initialProducts to ensure CATEGORIES are set
+        initialProducts.forEach(product => {
+            const docRef = window.db.collection(COLLECTION_NAME).doc(product.id);
+            batch.set({
+                ...product,
+                updatedAt: new Date().toISOString(),
+                isFactoryReset: true // Metadata to track reset
+            }, { merge: true }); // Use merge to avoid wiping other potential fields
+            changeCount++;
+        });
+
+        // 2. EXTRAS PRESERVATION: We no longer delete products with ID > 8 
+        // to allow the user to add new products as requested.
+        /*
+        snapshot.forEach(doc => {
+            const id = doc.id;
+            const numericId = parseInt(id);
+            if (isNaN(numericId) || numericId > 8) {
+                batch.delete(doc.ref);
+                changeCount++;
+            }
+        });
+        */
+
+        if (changeCount > 0) {
+            await batch.commit();
+            console.log(`Successfully updated 8 original products with categories.`);
+            localStorage.removeItem('otop_products_cache');
+
+            // Show success message before reload
+            alert('อัปเดตหมวดหมู่สินค้าสำเร็จ! / Categories Updated! Reloading...');
+            window.location.reload();
+        } else {
+            console.log('Database already matches initial state.');
+        }
+    } catch (error) {
+        console.error("Factory Reset Error:", error);
+    }
+};
+
+// Auto-trigger disabled to prevent infinite loops. 
+// Run window.fixDatabase() manually in console if a reset is needed.
+/*
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (window.isFirestoreEnabled) {
+            window.fixDatabase();
+        }
+    }, 2000);
+});
+*/
 
 // Check DB Readiness
 const checkDB = () => {
+    if (retryCount >= MAX_RETRIES) return; // Stop checking if max retries reached
+
     if (typeof window.db !== 'undefined') {
         window.isFirestoreEnabled = true;
-        // Try caching products immediately - now safe as getProducts is defined
+        // Try caching products immediately
         window.getProducts().then(() => {
+            // RE-ENABLED SEED: Safe as it only triggers if snapshot.empty is true.
             seedProducts();
         });
+    } else {
+        retryCount++;
+        setTimeout(checkDB, 500);
     }
 };
 
-// Retry initialization
+// Retry initialization with timeout limit
+let retryCount = 0;
+const MAX_RETRIES = 5; // Only retry 5 times (2.5 seconds total)
+
 const initProducts = () => {
     checkDB();
-    if (!window.isFirestoreEnabled) {
-        // Retry a few times if needed, but don't loop forever blocking
+    if (!window.isFirestoreEnabled && retryCount < MAX_RETRIES) {
+        retryCount++;
         setTimeout(initProducts, 500);
+    } else if (retryCount >= MAX_RETRIES) {
+        // Firestore not available, use fallback
+        console.warn('Firestore not available after retries. Using initialProducts fallback.');
+        window.isFirestoreEnabled = false;
+        // Cache initial products for immediate use
+        localStorage.setItem('otop_products_cache', JSON.stringify(initialProducts));
     }
 };
 

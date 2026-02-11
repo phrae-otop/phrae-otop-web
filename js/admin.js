@@ -127,11 +127,89 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </td>
                 <td>${u.email}</td>
                 <td style="font-family:monospace; color:#aaa;">${u.password}</td>
+                <td>
+                    <span style="background:${(u.discount && u.discount > 0) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(128, 128, 128, 0.2)'}; color:${(u.discount && u.discount > 0) ? '#4CAF50' : '#888'}; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:0.85rem;">
+                        ${u.discount || 0}%
+                    </span>
+                </td>
                 <td>${new Date(u.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                 <td>
+                    <button class="btn-icon" onclick="viewUserHistory('${u.id}', '${u.username}')" title="ดูประวัติการสั่งซื้อ" style="margin-right:5px; background:rgba(33, 150, 243, 0.2); color:#2196F3;">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button class="btn-icon" onclick="editCustomerDiscount(${index})" title="แก้ไขส่วนลด" style="margin-right:5px; background:rgba(76, 175, 80, 0.2); color:#4CAF50;">
+                        <i class="fas fa-percent"></i>
+                    </button>
                     <button class="btn-icon edit" onclick="editCustomerPassword(${index})" title="แก้ไขรหัสผ่าน">
                         <i class="fas fa-key"></i>
                     </button>
+                </td>
+            </tr>
+        `).join('');
+    };
+
+    window.editCustomerDiscount = (index) => {
+        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        const user = users[index];
+
+        if (!user) return;
+
+        const currentDiscount = user.discount || 0;
+        const newDiscount = prompt(`กำหนดส่วนลดสำหรับ: ${user.username}\n\nส่วนลดปัจจุบัน: ${currentDiscount}%\n\nกรอกส่วนลดใหม่ (0-100):`, currentDiscount);
+
+        if (newDiscount === null) return; // Cancelled
+
+        const discountValue = parseFloat(newDiscount);
+        if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
+            alert('กรุณากรอกส่วนลดที่ถูกต้อง (0-100%)');
+            return;
+        }
+
+        users[index].discount = discountValue;
+        localStorage.setItem('phrae_otop_users', JSON.stringify(users));
+
+        alert(`✅ อัปเดตส่วนลดเรียบร้อย!\n${user.username}: ${discountValue}%`);
+        renderAdminUsers();
+    };
+
+    window.viewUserHistory = (userId, username) => {
+        const modal = document.getElementById('history-modal');
+        const list = document.getElementById('user-history-list');
+        const title = document.getElementById('history-modal-title');
+
+        if (!modal || !list) return;
+
+        title.textContent = `ประวัติการสั่งซื้อ: ${username}`;
+        list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+        modal.style.display = 'flex';
+
+        // Filter orders from the live displayedOrders (which comes from Firestore)
+        // Match by userId (preferred) or by matching customer info
+        let userOrders = displayedOrders.filter(o => o.userId == userId);
+
+        // Fallback: if userId is guest or mismatch, try loose matching by name/email if user object has it?
+        // For now, rely on userId which we fixed in cart.js
+
+        if (userOrders.length === 0) {
+            list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#aaa;">ไม่พบประวัติการสั่งซื้อ</td></tr>';
+            return;
+        }
+
+        // Sort new to old
+        userOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        list.innerHTML = userOrders.map(o => `
+            <tr>
+                <td>#${o.id.substring(0, 6)}...</td>
+                <td>${o.displayDate || o.date}</td>
+                <td>
+                    ${o.items.map(i => `<div style="font-size:0.85rem;">- ${i.title} (x${i.quantity})</div>`).join('')}
+                </td>
+                <td>฿${o.total.toLocaleString()}</td>
+                <td>
+                    <span class="status-badge status-${o.status || 'pending'}">
+                        ${o.status || 'Pending'}
+                    </span>
                 </td>
             </tr>
         `).join('');
@@ -166,20 +244,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const renderAdminProducts = async () => {
         const productTableBody = document.getElementById('admin-product-list');
-        productTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+        productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
 
         const products = window.getProducts ? await window.getProducts() : [];
         if (products.length === 0) {
-            productTableBody.innerHTML = '<tr><td colspan="5" class="text-center">No products found.</td></tr>';
+            productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No products found.</td></tr>';
             return;
         }
 
+        // Category translations
+        const categoryNames = {
+            'textile': 'ผ้าทอ',
+            'handicraft': 'งานฝีมือ',
+            'woodwork': 'งานไม้',
+            'herbal': 'สมุนไพร',
+            'ceramic': 'เครื่องปั้น',
+            'other': 'อื่นๆ'
+        };
+
+        const categoryColors = {
+            'textile': '#2196F3',
+            'handicraft': '#FF9800',
+            'woodwork': '#795548',
+            'herbal': '#4CAF50',
+            'ceramic': '#9C27B0',
+            'other': '#607D8B'
+        };
+
         productTableBody.innerHTML = products.map(p => `
             <tr>
-                <td><img src="${p.image}" alt="" class="p-thumb"></td>
+                <td><img src="${p.image || 'assets/images/placeholder.png'}" alt="" class="p-thumb" onerror="this.src='assets/images/placeholder.png'"></td>
                 <td class="p-title-cell">
                     <div>${p.title}</div>
                     <small>${p.titleEn}</small>
+                </td>
+                <td>
+                    <span style="
+                        background: ${categoryColors[p.category] || '#607D8B'}22;
+                        color: ${categoryColors[p.category] || '#607D8B'};
+                        padding: 4px 12px;
+                        border-radius: 12px;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        display: inline-block;
+                    ">
+                        ${categoryNames[p.category] || p.category || 'ไม่ระบุ'}
+                    </span>
                 </td>
                 <td>฿${p.price.toLocaleString()}</td>
                 <td>
@@ -234,6 +344,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-id').value = '';
         document.getElementById('modal-title').textContent = 'เพิ่มสินค้าใหม่';
 
+        // Reset Preview UI
+        const preview = document.getElementById('p-image-preview');
+        const placeholder = document.getElementById('upload-placeholder');
+        preview.src = '';
+        preview.style.display = 'none';
+        placeholder.style.display = 'block';
+
         if (id) {
             const products = await window.getProducts();
             const p = products.find(x => x.id === id);
@@ -245,10 +362,86 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('p-desc-en').value = p.descEn;
                 document.getElementById('p-price').value = p.price;
                 document.getElementById('p-stock').value = p.stock || 100;
+                document.getElementById('p-category').value = p.category || 'textile';
                 document.getElementById('p-image').value = p.image;
+
+                // Update Preview UI (Removed re-declarations to fix shadowing)
+                if (p.image) {
+                    preview.src = p.image;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+
                 document.getElementById('modal-title').textContent = 'แก้ไขสินค้า';
             }
         }
+    };
+
+    window.handleProductImageUpload = (input) => {
+        const file = input.files[0];
+        if (!file) return;
+
+        // Show loading state/feedback
+        const placeholder = document.getElementById('upload-placeholder');
+        const preview = document.getElementById('p-image-preview');
+        const uploadBtn = input.previousElementSibling || document.querySelector('.upload-controls button');
+        const saveBtn = document.getElementById('save-product-btn');
+
+        if (placeholder) {
+            placeholder.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 3.5rem; color: #ffd700;"></i><p>กำลังประมวลผล... / Processing...</p>';
+        }
+        if (saveBtn) saveBtn.disabled = true;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 640; // Safer conservative limit
+
+                if (width > height) {
+                    if (width > maxDim) {
+                        height *= maxDim / width;
+                        width = maxDim;
+                    }
+                } else {
+                    if (height > maxDim) {
+                        width *= maxDim / height;
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Strong compression (0.7) for maximum database reliability
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                document.getElementById('p-image').value = dataUrl;
+
+                // Update Preview UI
+                preview.src = dataUrl;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+
+                // Restore UI state
+                if (placeholder) {
+                    placeholder.innerHTML = '<i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 10px; color: #ffd700;"></i><p>คลิกเพื่อเลือกไฟล์รูปภาพ / Click to Select Photo</p><span style="font-size: 0.8rem;">(แนะนำขนาด 800x800px)</span>';
+                }
+                if (saveBtn) saveBtn.disabled = false;
+
+                console.log("Image compressed and ready. DataURL length:", dataUrl.length);
+            };
+            img.onerror = () => {
+                alert('ไฟล์รูปภาพไม่ถูกต้อง หรือโหลดไม่ได้ / Invalid image file.');
+            };
+            img.src = e.target.result;
+            input.value = ''; // Reset file input to allow re-selecting same file if needed
+        };
+        reader.readAsDataURL(file);
     };
 
     window.closeProductModal = () => {
@@ -268,27 +461,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             descEn: document.getElementById('p-desc-en').value,
             price: parseFloat(document.getElementById('p-price').value),
             stock: parseInt(document.getElementById('p-stock').value) || 100,
+            category: document.getElementById('p-category').value,
             image: document.getElementById('p-image').value
         };
 
         try {
+            console.log("Saving product data:", productData); // DEBUG LOG
+
             if (id) {
-                // UPDATE
-                await window.db.collection('products').doc(id).update(productData);
+                // UPSERT: Use set with merge true to ensure it works even if doc was missing
+                await window.db.collection('products').doc(id).set({
+                    ...productData,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                console.log("Product upserted (Updated):", id);
             } else {
                 // CREATE new
-                await window.db.collection('products').add({
+                const docRef = await window.db.collection('products').add({
                     ...productData,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString() // Ensure it has updatedAt for sorting
                 });
+                console.log("New product added with ID:", docRef.id);
             }
-            // window.saveProducts not needed as we write to DB
-            renderAdminProducts();
+
+            // Critical: Refresh local list and UI
+            localStorage.removeItem('otop_products_cache');
+
+            // Wait a moment for Firestore propagation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            await renderAdminProducts();
             closeProductModal();
-            alert('บันทึกข้อมูลเรียบร้อย / Product saved!');
+            alert('บันทึกข้อมูลและรูปภาพเรียบร้อยแล้ว! / Image and data saved successfully!');
+
+            // Force reload to ensure homepage sees it if cached
+            if (confirm('ต้องการรีโหลดหน้าเว็บเพื่อดูการเปลี่ยนแปลงทันทีหรือไม่? / Reload page to see changes?')) {
+                window.location.reload();
+            }
         } catch (error) {
-            console.error(error);
-            alert('Error saving product: ' + error.message);
+            console.error("Save Error:", error);
+            alert('เกิดข้อผิดพลาดในการบันทึก: ' + error.message + '\n\nสาเหตุอาจเกิดจากรูปภาพมีขนาดใหญ่เกินไป หรือการเชื่อมต่อฐานข้อมูลขัดข้อง');
         }
     });
 
@@ -305,9 +518,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? / Are you sure you want to delete this product?')) {
             try {
                 await window.db.collection('products').doc(id).delete();
-                renderAdminProducts();
+                console.log("Product deleted:", id);
+
+                // Clear cache
+                localStorage.removeItem('otop_products_cache');
+
+                // Wait for propagation
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                await renderAdminProducts();
+                alert('ลบสินค้าเรียบร้อยแล้ว / Product deleted.');
+
+                // Optional: ask to reload to sync homepage
+                if (confirm('รีโหลดหน้าเว็บเพื่ออัปเดตข้อมูลทันทีหรือไม่? / Reload page to update?')) {
+                    window.location.reload();
+                }
             } catch (e) {
-                alert('Error deleting: ' + e.message);
+                console.error("Delete Error:", e);
+                alert('เกิดข้อผิดพลาดในการลบ: ' + e.message);
             }
         }
     };
@@ -420,7 +648,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `).join('')}
                 </div>
                 <div class="order-footer">
-                    <div class="order-total">
+                    <div class="order-total" style="margin-right: 15px;">
                         ยอดรวม: ฿${o.total.toLocaleString()}
                     </div>
                     <button class="btn-status pack" onclick="updateOrderStatus('${o.id}', 'shipping')">
@@ -489,7 +717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `).join('')}
                 </div>
                 <div class="order-footer">
-                    <div class="order-total">
+                    <div class="order-total" style="margin-right: 15px;">
                         ยอดรวม: ฿${o.total.toLocaleString()}
                     </div>
                     <button class="btn-status deliver" onclick="updateOrderStatus('${o.id}', 'delivered')">

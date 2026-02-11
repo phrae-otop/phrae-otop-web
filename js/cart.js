@@ -17,15 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadCustomerInfo = () => {
         const savedInfo = JSON.parse(localStorage.getItem('phrae_otop_cust_info'));
         if (savedInfo) {
-            if (document.getElementById('name')) document.getElementById('name').value = savedInfo.name || '';
-            if (document.getElementById('tel')) document.getElementById('tel').value = savedInfo.tel || '';
-            if (document.getElementById('address')) document.getElementById('address').value = savedInfo.address || '';
+            if (document.getElementById('cust-name')) document.getElementById('cust-name').value = savedInfo.name || '';
+            if (document.getElementById('cust-phone')) document.getElementById('cust-phone').value = savedInfo.tel || '';
+            if (document.getElementById('cust-address')) document.getElementById('cust-address').value = savedInfo.address || ''; // Corrected ID
         } else {
             // Try Auth User
             const currentUser = JSON.parse(localStorage.getItem('phrae_otop_currentUser'));
             if (currentUser) {
-                if (document.getElementById('name')) document.getElementById('name').value = currentUser.name || '';
-                if (document.getElementById('tel')) document.getElementById('tel').value = currentUser.tel || '';
+                if (document.getElementById('cust-name')) document.getElementById('cust-name').value = currentUser.name || '';
+                if (document.getElementById('cust-phone')) document.getElementById('cust-phone').value = currentUser.tel || '';
             }
         }
     };
@@ -95,33 +95,52 @@ document.addEventListener('DOMContentLoaded', () => {
     window.bindCartEvents = bindCartEvents;
     bindCartEvents();
 
+    // Slip Upload & Preview Logic
+    const slipInput = document.getElementById('payment-slip'); // Corrected ID
+    const slipPreviewContainer = document.getElementById('slip-preview');
+    let currentSlipBase64 = null;
+
+    if (slipInput) {
+        slipInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                alert('ไฟล์มีขนาดใหญ่เกินไป (Max 2MB) / File too large');
+                slipInput.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentSlipBase64 = event.target.result;
+                // Show preview
+                slipPreviewContainer.innerHTML = `<img src="${currentSlipBase64}" alt="Slip Preview" style="width:100%; border-radius:8px; border:1px solid #444; margin-top:10px;">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     // Real-time Checkout to Firestore
     const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', async (e) => {
-            // Prevent default form submission if it's a button inside form, though usually type="button" is safer
-            // But here it seems attached to .checkout-btn which might be outside or explicitly handled.
             e.preventDefault();
 
             if (cart.length === 0) return;
 
-            const custName = document.getElementById('name').value.trim();
-            const custPhone = document.getElementById('tel').value.trim();
-            const custAddress = document.getElementById('address').value.trim();
-
+            const custName = document.getElementById('cust-name').value.trim(); // Corrected from 'name'
+            const custPhone = document.getElementById('cust-phone').value.trim(); // Corrected from 'tel'
+            const custAddress = document.getElementById('cust-address').value.trim(); // Corrected ID
+            const slipFile = slipInput ? slipInput.files[0] : null;
 
             if (!custName || !custPhone || !custAddress) {
                 alert('กรุณากรอกข้อมูลให้ครบถ้วน / Please enter all required information.');
                 return;
             }
 
-            // Slip handling currently simplified or removed in this view
-            const slipInput = document.getElementById('slip');
-            let slipData = null;
-            if (slipInput && slipInput.files[0]) {
-                // simple verify
-            } else {
-                if (!confirm('คุณยังไม่ได้แนบสลิปการโอนเงิน ต้องการดำเนินการต่อหรือไม่?')) return;
+            if (!slipFile && !currentSlipBase64) {
+                if (!confirm('คุณยังไม่ได้แนบสลิปการโอนเงิน ต้องการดำเนินการต่อหรือไม่? / No slip attached. Continue?')) return;
             }
 
             // Show Loading State
@@ -131,9 +150,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const currentUser = JSON.parse(localStorage.getItem('phrae_otop_currentUser'));
+
+                // Calculate discount if applicable
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                let discountInfo = null;
+                let finalTotal = subtotal;
+
+                if (currentUser) {
+                    const allUsers = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+                    const fullUserData = allUsers.find(u => u.id === currentUser.id);
+
+                    if (fullUserData && fullUserData.discount && fullUserData.discount > 0) {
+                        const discountPercentage = fullUserData.discount;
+                        const discountAmount = Math.round(subtotal * (discountPercentage / 100));
+                        finalTotal = subtotal - discountAmount;
+
+                        discountInfo = {
+                            percentage: discountPercentage,
+                            amount: discountAmount,
+                            originalTotal: subtotal
+                        };
+                    }
+                }
+
                 const newOrder = {
                     userId: currentUser ? currentUser.id : 'guest',
-                    date: new Date().toISOString(), // Use ISO for better sorting
+                    date: new Date().toISOString(),
                     displayDate: new Date().toLocaleString(),
                     customer: {
                         name: custName,
@@ -141,9 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         address: custAddress
                     },
                     items: [...cart],
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    total: finalTotal,
+                    discount: discountInfo, // Save discount info
                     status: 'pending',
-                    slip: slipData,
+                    slip: currentSlipBase64, // Use the base64 string
                     createdAt: new Date()
                 };
 
@@ -151,31 +194,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof window.db !== 'undefined') {
                     await window.db.collection('orders').add(newOrder);
 
-                    // Reduce stock for ordered items (Optimistic update)
+                    // Reduce stock logic (same as before)
                     const products = window.getProducts ? await window.getProducts() : [];
-
                     const batch = window.db.batch();
 
                     for (const cartItem of cart) {
                         const product = products.find(p => p.id === cartItem.id);
                         if (product) {
                             const productRef = window.db.collection('products').doc(product.id);
-                            // Decrement stock
-                            // For compat SDK, we might need firebase.firestore.FieldValue.increment(-cartItem.quantity)
-                            // But for safety in simple mode, we just write new stock
                             const newStock = Math.max(0, (product.stock || 0) - cartItem.quantity);
                             batch.update(productRef, { stock: newStock });
                         }
                     }
                     await batch.commit();
                 } else {
-                    // Fallback incase DB is down
+                    // Fallback
                     let orders = JSON.parse(localStorage.getItem('otop_orders')) || [];
                     orders.push(newOrder);
                     localStorage.setItem('otop_orders', JSON.stringify(orders));
                 }
 
-                // SAVE ADDRESS FOR NEXT TIME
+                // SAVE ADDRESS
                 localStorage.setItem('phrae_otop_cust_info', JSON.stringify({
                     name: custName,
                     tel: custPhone,
@@ -188,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateBadge();
 
                 alert('✅ สั่งซื้อสำเร็จ! ข้อมูลถูกส่งไปยังแอดมินเรียบร้อยแล้ว\nOrder confirmed!');
-                window.location.href = 'index.html'; // Go back to home
+                window.location.href = 'account.html?tab=orders';
 
             } catch (error) {
                 console.error("Error creating order:", error);
@@ -201,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cart Page Logic
     const cartItemsContainer = document.getElementById('cart-items');
-    const cartTotalAmount = document.getElementById('final-price'); // Adjusted ID based on earlier context
+    const cartTotalAmount = document.getElementById('cart-total-amount'); // Corrected ID
 
     const renderCart = () => {
         if (!cartItemsContainer) return;
@@ -227,24 +266,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cartItemsContainer.innerHTML = cart.map((item, index) => `
             <div class="cart-item">
-                 <img src="${item.image}" alt="">
-                <div class="cart-item-details">
-                    <h4>${lang === 'th' ? item.title : item.titleEn}</h4>
-                    <p>฿${item.price.toLocaleString()}</p>
-                     <div class="qty-controls">
-                        <button onclick="updateQty('${item.id}', -1)">-</button>
-                        <span>${item.quantity}</span>
-                        <button onclick="updateQty('${item.id}', 1)">+</button>
-                    </div>
+                <div class="cart-item-img">
+                    <img src="${item.image}" alt="">
                 </div>
-                <button class="remove-btn" onclick="removeItem('${item.id}')">
+                <div class="cart-item-info">
+                    <h3>${lang === 'th' ? item.title : item.titleEn}</h3>
+                    <!-- <p>${lang === 'th' ? 'รหัสสินค้า' : 'ID'}: ${item.id}</p> -->
+                </div>
+                <div class="cart-item-price">
+                    ฿${item.price.toLocaleString()}
+                </div>
+                <div class="cart-item-qty">
+                    <button class="qty-btn" onclick="updateQty('${item.id}', -1)">-</button>
+                    <span>${item.quantity}</span>
+                    <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+                </div>
+                <button class="remove-item-btn" onclick="removeItem('${item.id}')" title="${lang === 'th' ? 'ลบสินค้า' : 'Remove'}">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `).join('');
 
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        if (cartTotalAmount) cartTotalAmount.textContent = `฿${total.toLocaleString()}`;
+        // Calculate total and apply discount if user is logged in
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Check if user has discount
+        const currentUser = JSON.parse(localStorage.getItem('phrae_otop_currentUser'));
+        let discountPercentage = 0;
+        let discountAmount = 0;
+        let finalTotal = subtotal;
+
+        if (currentUser) {
+            const allUsers = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+            const fullUserData = allUsers.find(u => u.id === currentUser.id);
+
+            if (fullUserData && fullUserData.discount && fullUserData.discount > 0) {
+                discountPercentage = fullUserData.discount;
+                discountAmount = Math.round(subtotal * (discountPercentage / 100));
+                finalTotal = subtotal - discountAmount;
+            }
+        }
+
+        // Update total display with discount breakdown
+        if (cartTotalAmount) {
+            if (discountAmount > 0) {
+                cartTotalAmount.innerHTML = `
+                    <div style="text-align: right;">
+                        <div style="color: #888; font-size: 0.9rem; margin-bottom: 5px;">
+                            ยอดรวม: <span style="text-decoration: line-through;">฿${subtotal.toLocaleString()}</span>
+                        </div>
+                        <div style="color: #4CAF50; font-size: 0.9rem; margin-bottom: 5px;">
+                            <i class="fas fa-gift"></i> ส่วนลด ${discountPercentage}%: -฿${discountAmount.toLocaleString()}
+                        </div>
+                        <div style="color: var(--primary-color); font-size: 1.2rem; font-weight: bold;">
+                            ยอดสุทธิ: ฿${finalTotal.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            } else {
+                cartTotalAmount.textContent = `฿${subtotal.toLocaleString()}`;
+            }
+        }
     };
 
     window.updateQty = (id, change) => {

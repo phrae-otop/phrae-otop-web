@@ -2,7 +2,7 @@
 // Note: We expect the firebase-app-compat.js, firestore-compat.js, auth-compat.js to be loaded in HTML
 
 const firebaseConfig = {
-    apiKey: "AIzaSyB6KeEuk4JS7QnDY93UGFZ9I4_jD7RUGdB",
+    apiKey: "AIzaSyB5KeEuk4JS7QnDY93UGFZ9I4_jD7RUGd8",
     authDomain: "otop-phrae.firebaseapp.com",
     projectId: "otop-phrae",
     storageBucket: "otop-phrae.firebasestorage.app",
