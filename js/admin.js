@@ -567,13 +567,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Subscribe to orders
     const subscribeOrders = () => {
-        if (!window.db) return;
-        window.db.collection('orders').orderBy('date', 'desc').onSnapshot((snapshot) => {
-            const orders = [];
-            snapshot.forEach((doc) => {
-                orders.push({ id: doc.id, ...doc.data() });
-            });
-            displayedOrders = orders;
+        // 1. Load LocalStorage Orders (Fallback/Hybrid)
+        const loadLocalOrders = () => {
+            const localOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
+            return localOrders.map(o => ({ ...o, source: 'local' })); // Tag them
+        };
+
+        const updateDisplay = (firestoreOrders = []) => {
+            const local = loadLocalOrders();
+            // Merge: Prefer Firestore if IDs match (assuming local might be temp)
+            // But usually local orders have no ID or temp ID? 
+            // Let's just concat for now and dedup by ID if possible.
+            // Actually, if pure local, id might be missing or generated. 
+            // Simpler: Just show both unique set.
+
+            const allOrders = [...firestoreOrders, ...local];
+            // Sort by date desc
+            allOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            displayedOrders = allOrders;
 
             // Re-render current tab
             const activeTab = document.querySelector('.sidebar-nav a.active')?.getAttribute('data-tab');
@@ -581,10 +593,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (activeTab === 'shipping') renderShippingOrders();
             if (activeTab === 'history') renderHistoryOrders();
 
-            // Check for new orders logic (Sound)
-            // Simplifying: just ring on snapshot changes if purely new addition? 
-            // For now let's reuse checkNewOrders logic slightly modified if needed or rely on snapshot
-        });
+            // Check for new orders logic (Sound) - rudimentary check
+            const currentCount = allOrders.length;
+            const lastCount = parseInt(localStorage.getItem('adminLastOrderCount') || 0);
+            if (currentCount > lastCount) {
+                const audio = document.getElementById('notification-sound');
+                if (audio && localStorage.getItem('adminSoundEnabled') === 'true') {
+                    audio.play().catch(e => console.log('Audio verify:', e));
+                }
+                localStorage.setItem('adminLastOrderCount', currentCount);
+            }
+        };
+
+        if (window.db) {
+            window.db.collection('orders').orderBy('date', 'desc').onSnapshot((snapshot) => {
+                const orders = [];
+                snapshot.forEach((doc) => {
+                    orders.push({ id: doc.id, ...doc.data(), source: 'firebase' });
+                });
+                updateDisplay(orders);
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                // If permission denied or index missing, allow local orders to show at least
+                alert("เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ (Firestore Error):\n" + error.message);
+                updateDisplay([]);
+            });
+        } else {
+            // Local only mode
+            updateDisplay([]);
+        }
     };
     subscribeOrders();
 
