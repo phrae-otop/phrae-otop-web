@@ -242,6 +242,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const productForm = document.getElementById('product-form');
     const productModal = document.getElementById('product-modal');
 
+    // AUTO-CATEGORIZATION LOGIC
+    const pTitleInput = document.getElementById('p-title');
+    const pTitleEnInput = document.getElementById('p-title-en');
+    const pCategorySelect = document.getElementById('p-category');
+
+    const autoCategorize = (text) => {
+        if (!text || !pCategorySelect) return;
+        text = text.toLowerCase();
+
+        // Keywords mapping
+        if (text.includes('ผ้า') || text.includes('เสื้อ') || text.includes('หม้อห้อม') || text.includes('shirt') || text.includes('fabric') || text.includes('textile') || text.includes('silk') || text.includes('cotton')) {
+            pCategorySelect.value = 'textile';
+        } else if (text.includes('สาน') || text.includes('ตะกร้า') || text.includes('basket') || text.includes('rattan') || text.includes('bamboo') || text.includes('งานฝีมือ')) {
+            pCategorySelect.value = 'handicraft';
+        } else if (text.includes('เซรามิก') || text.includes('ceramic') || text.includes('ถ้วย') || text.includes('ชาม') || text.includes('ไม้') || text.includes('wood') || text.includes('carving')) {
+            pCategorySelect.value = 'ceramic';
+        } else if (text.includes('สมุนไพร') || text.includes('shampoo') || text.includes('soap') || text.includes('balm') || text.includes('ยา') || text.includes('อาหาร') || text.includes('food') || text.includes('honey') || text.includes('น้ำผึ้ง') || text.includes('แคบหมู')) {
+            pCategorySelect.value = 'herbal';
+        } else if (text.includes('สร้อย') || text.includes('แหวน') || text.includes('jewelry') || text.includes('silver') || text.includes('gold') || text.includes('กำไล')) {
+            pCategorySelect.value = 'jewelry';
+        }
+
+        // Visual feedback
+        pCategorySelect.style.border = '1px solid #4CAF50';
+        pCategorySelect.style.boxShadow = '0 0 5px #4CAF50';
+
+        // Remove highlight after 1.5 seconds
+        if (window.catTimeout) clearTimeout(window.catTimeout);
+        window.catTimeout = setTimeout(() => {
+            pCategorySelect.style.border = '1px solid rgba(255,255,255,0.1)';
+            pCategorySelect.style.boxShadow = 'none';
+        }, 1500);
+    };
+
+    if (pTitleInput) {
+        pTitleInput.addEventListener('input', (e) => autoCategorize(e.target.value));
+    }
+    if (pTitleEnInput) {
+        pTitleEnInput.addEventListener('input', (e) => autoCategorize(e.target.value));
+    }
+
     const renderAdminProducts = async () => {
         const productTableBody = document.getElementById('admin-product-list');
         productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
@@ -278,22 +319,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div>${p.title}</div>
                     <small>${p.titleEn}</small>
                 </td>
-                <td>
-                    <span style="
-                        background: ${categoryColors[p.category] || '#607D8B'}22;
-                        color: ${categoryColors[p.category] || '#607D8B'};
-                        padding: 4px 12px;
-                        border-radius: 12px;
-                        font-size: 0.85rem;
-                        font-weight: 600;
-                        display: inline-block;
-                    ">
-                        ${categoryNames[p.category] || p.category || 'ไม่ระบุ'}
-                    </span>
-                </td>
+
                 <td>฿${p.price.toLocaleString()}</td>
                 <td>
-                    <span style="color: ${(p.stock || 0) < 10 ? '#ff4444' : '#4CAF50'}; font-weight: bold;">
+                    <span style="color: #ffffff; font-weight: bold;">
                         ${p.stock || 0} ชิ้น
                     </span>
                     <button class="btn-icon" onclick="adjustStock('${p.id}')" title="ปรับสต็อก" style="margin-left:5px;">
