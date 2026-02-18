@@ -1,13 +1,13 @@
 /* Chat Widget Styles */
 :root {
-    --chat-primary: #E62129;
-    /* Vibrant Red */
+    --chat-primary: #FF6F00;
+    /* Vibrant Orange */
     --chat-bg: #050505;
     --chat-text: #FFFFFF;
     --chat-incoming: #333333;
     /* Dark Grey loop */
-    --chat-outgoing: #E62129;
-    /* Red */
+    --chat-outgoing: #FF6F00;
+    /* Orange */
 }
 
 .chat-widget-btn {

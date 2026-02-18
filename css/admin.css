@@ -1,39 +1,39 @@
-/* Lanna Gold Midnight Theme */
+/* Phrae OTOP Admin - White/Orange Theme */
 :root {
-    --primary-color: #FFD700;
-    /* Gold */
-    --primary-dark: #B8860B;
-    --hover-color: #FFE55C;
-    --bg-light: #050505;
-    /* Dark background */
-    --sidebar-bg: rgba(15, 15, 15, 0.85);
-    /* Dark Glass */
-    --card-bg: rgba(30, 30, 30, 0.6);
-    /* Semi-transparent */
-    --text-main: #FFFFFF;
-    --text-light: #F0F0F0;
-    --text-muted: #AAAAAA;
-    --border-color: rgba(255, 215, 0, 0.2);
-    /* Gold tint */
+    --primary-color: #FF6F00;
+    /* Orange */
+    --primary-dark: #FF8F00;
+    --hover-color: #FFD54F;
+    --bg-light: #F4F6F9;
+    /* Light Grey background */
+    --sidebar-bg: #FFFFFF;
+    /* White Sidebar */
+    --card-bg: #FFFFFF;
+    /* White Cards */
+    --text-main: #333333;
+    --text-light: #555555;
+    --text-muted: #777777;
+    --border-color: #E0E0E0;
+    /* Light border */
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.5);
-    --gold-glow: 0 0 10px rgba(255, 215, 0, 0.3);
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.1);
+    --gold-glow: 0 0 10px rgba(255, 111, 0, 0.2);
 }
 
-/* Fix for Select Options on Dark Background */
+/* Fix for Select Options */
 select option {
-    background-color: #222;
-    color: #fff;
+    background-color: #fff;
+    color: #333;
 }
 
 body {
     font-family: 'Kanit', sans-serif;
     background-color: var(--bg-light);
     color: var(--text-main);
-    /* Lanna Traditional Pattern Background */
+    /* Lanna Traditional Pattern Background - Light */
     background-image:
-        linear-gradient(to bottom, rgba(5, 5, 5, 0.94), rgba(10, 10, 10, 0.9)),
+        linear-gradient(to bottom, rgba(244, 246, 249, 0.94), rgba(244, 246, 249, 0.9)),
         url('../assets/images/thai_traditional_pattern_bg_1769154778551.png');
     background-size: 300px;
     /* Pattern tile size */
@@ -96,7 +96,7 @@ body {
 .sidebar {
     width: 250px;
     background: var(--sidebar-bg);
-    color: white;
+    color: #333;
     display: flex;
     flex-direction: column;
     padding: 20px 0;
@@ -105,7 +105,7 @@ body {
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-right: 1px solid var(--border-color);
-    box-shadow: 5px 0 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
     z-index: 100;
 }
 
@@ -172,8 +172,8 @@ body {
 
 .sidebar-nav a:hover,
 .sidebar-nav a.active {
-    background: rgba(230, 33, 41, 0.1);
-    color: white;
+    background: rgba(255, 111, 0, 0.1);
+    color: var(--primary-color);
     border-left-color: var(--primary-color);
 }
 
@@ -238,18 +238,18 @@ table {
 }
 
 th {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--primary-color);
     color: #FFFFFF;
     font-weight: 600;
     text-align: left;
     padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid #e0e0e0;
 }
 
 td {
     padding: 15px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: #ddd;
+    border-bottom: 1px solid #eee;
+    color: #555;
     vertical-align: middle;
 }
 
@@ -515,6 +515,7 @@ td {
     align-items: center;
     gap: 8px;
     transition: var(--transition);
+    white-space: nowrap;
 }
 
 .btn-status.pack {
@@ -589,10 +590,11 @@ input,
 textarea {
     width: 100%;
     padding: 12px;
-    background: #fdfdfd;
-    border: 1px solid #ddd;
+    background: #1e1e1e;
+    /* Dark input */
+    border: 1px solid #444;
     border-radius: 6px;
-    color: #333;
+    color: #fff;
     font-family: inherit;
     box-sizing: border-box;
 }

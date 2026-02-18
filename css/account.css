@@ -8,10 +8,7 @@
     transition: var(--transition);
 }
 
-.order-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(230, 33, 41, 0.3);
-}
+
 
 .order-header {
     display: flex;
@@ -38,6 +35,7 @@
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .order-status.pending {
