@@ -92,6 +92,17 @@ const initialProducts = [
         image: "assets/images/mudmee-silk.jpg",
         stock: 15,
         category: "textile"
+    },
+    {
+        id: "9",
+        title: "ข้าวเเต๋นสูตรดั้งเดิม",
+        titleEn: "Traditional Rice Cracker",
+        price: 35,
+        desc: "ข้าวแต๋นน้ำแตงโม หวานมัน กรอบอร่อย ผลิตจากข้าวเหนียวชั้นดี",
+        descEn: "Traditional watermelon rice cracker, sweet, crispy, made from premium sticky rice.",
+        image: "assets/images/rice-cracker.jpg",
+        stock: 50,
+        category: "herbal"
     }
 ];
 

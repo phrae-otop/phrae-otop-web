@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 margin-bottom: 20px; 
                                 border-left: 5px solid var(--primary-color); 
                                 padding-left: 15px;
-                                color: var(--text-main);
+                                color: #FFFFFF;
                             ">${catName}</h3>
                             <div class="product-grid">
                                 ${catProducts.map(p => createCard(p)).join('')}

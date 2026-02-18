@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="order-footer">
                     <div class="order-total-row" style="display:flex; justify-content:space-between; width:100%;">
-                         <span>ยอดสุทธิ / Total</span>
+                         <span style="margin-left: 20px;">ยอดสุทธิ / Total</span>
                          <span style="color: var(--primary-color); font-weight:bold;">฿${(order.total || 0).toLocaleString()}</span>
                     </div>
                 </div>

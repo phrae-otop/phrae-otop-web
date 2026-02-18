@@ -254,14 +254,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Keywords mapping
         if (text.includes('ผ้า') || text.includes('เสื้อ') || text.includes('หม้อห้อม') || text.includes('shirt') || text.includes('fabric') || text.includes('textile') || text.includes('silk') || text.includes('cotton')) {
             pCategorySelect.value = 'textile';
+        } else if (text.includes('ไม้') || text.includes('สัก') || text.includes('wood') || text.includes('teak') || text.includes('carving') || text.includes('saks') || text.includes('แกะสลัก')) {
+            pCategorySelect.value = 'woodwork';
         } else if (text.includes('สาน') || text.includes('ตะกร้า') || text.includes('basket') || text.includes('rattan') || text.includes('bamboo') || text.includes('งานฝีมือ')) {
             pCategorySelect.value = 'handicraft';
-        } else if (text.includes('เซรามิก') || text.includes('ceramic') || text.includes('ถ้วย') || text.includes('ชาม') || text.includes('ไม้') || text.includes('wood') || text.includes('carving')) {
+        } else if (text.includes('เซรามิก') || text.includes('ceramic') || text.includes('ถ้วย') || text.includes('ชาม') || text.includes('pottery') || text.includes('clay')) {
             pCategorySelect.value = 'ceramic';
-        } else if (text.includes('สมุนไพร') || text.includes('shampoo') || text.includes('soap') || text.includes('balm') || text.includes('ยา') || text.includes('อาหาร') || text.includes('food') || text.includes('honey') || text.includes('น้ำผึ้ง') || text.includes('แคบหมู')) {
+        } else if (text.includes('สมุนไพร') || text.includes('shampoo') || text.includes('soap') || text.includes('balm') || text.includes('ยา') || text.includes('อาหาร') || text.includes('food') || text.includes('honey') || text.includes('น้ำผึ้ง') || text.includes('แคบหมู') || text.includes('ข้าวแต๋น')) {
             pCategorySelect.value = 'herbal';
         } else if (text.includes('สร้อย') || text.includes('แหวน') || text.includes('jewelry') || text.includes('silver') || text.includes('gold') || text.includes('กำไล')) {
             pCategorySelect.value = 'jewelry';
+        } else {
+            // Default to other if no specific match, but usually we let user decide or leave as is
+            // pCategorySelect.value = 'other'; 
         }
 
         // Visual feedback
