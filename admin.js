@@ -103,16 +103,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // MEMBER MANAGEMENT
-    const userListContainer = document.getElementById('admin-user-list');
-    const totalMembersEl = document.getElementById('total-members-count');
+    window.adminUsersCache = []; // Global cache for users
 
-    function renderAdminUsers(providedData = null) {
+    function renderAdminUsers() {
         // ✅ Query DOM fresh every time to avoid stale reference
         const container = document.getElementById('admin-user-list');
         const countEl = document.getElementById('total-members-count');
 
-        // Use provided data directly from Firestore snapshot
-        const users = providedData || JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        // Use global cache (populated by Firestore onSnapshot)
+        const users = window.adminUsersCache;
         
         console.log(`🖥️ [UI Render] Rendering ${users.length} users to the table...`);
         if (users.length > 0) {
@@ -641,6 +640,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 console.log("Users fetched from Firestore:", users.length);
                 
+                // Store in global cache
+                window.adminUsersCache = users;
+                
                 // Update LocalStorage for backup/offline
                 localStorage.setItem('phrae_otop_users', JSON.stringify(users));
 
@@ -660,8 +662,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 localStorage.setItem('adminLastUserCount', currentCount);
 
-                // Always re-render if we can, to ensure UI is fresh
-                renderAdminUsers(users);
+                // Always re-render
+                renderAdminUsers();
 
             }, (error) => {
                 console.error("Firestore Users Error:", error);
