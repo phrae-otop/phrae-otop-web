@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userListContainer = document.getElementById('admin-user-list');
     const totalMembersEl = document.getElementById('total-members-count');
 
-    function renderAdminUsers() {
-        // Read directly from the latest snapshot data stored in localStorage
-        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+    function renderAdminUsers(providedData = null) {
+        // Use provided data or fallback to localStorage
+        const users = providedData || JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
         
         console.log(`🖥️ [UI Render] Rendering ${users.length} users to the table...`);
         if (users.length > 0) {
@@ -655,7 +655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('adminLastUserCount', currentCount);
 
                 // Always re-render if we can, to ensure UI is fresh
-                renderAdminUsers();
+                renderAdminUsers(users);
 
             }, (error) => {
                 console.error("Firestore Users Error:", error);
