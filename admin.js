@@ -631,6 +631,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const totalMembersEl = document.getElementById('total-members-count');
                 if (totalMembersEl) totalMembersEl.textContent = users.length.toLocaleString();
 
+                // Check for new users logic (Sound)
+                const currentCount = users.length;
+                const lastCount = parseInt(localStorage.getItem('adminLastUserCount') || 0);
+                if (currentCount > lastCount && lastCount > 0) { // Only play if count increased and not first load
+                    const audio = document.getElementById('notification-sound');
+                    if (audio && localStorage.getItem('adminSoundEnabled') === 'true') {
+                        audio.play().catch(e => console.log('Audio verify:', e));
+                    }
+                    console.log("🔔 New user registered! Playing sound.");
+                }
+                localStorage.setItem('adminLastUserCount', currentCount);
+
                 // If currently viewing users tab, re-render
                 const usersTab = document.getElementById('users-tab');
                 if (usersTab && usersTab.classList.contains('active')) {
