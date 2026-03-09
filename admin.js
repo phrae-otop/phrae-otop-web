@@ -107,7 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const totalMembersEl = document.getElementById('total-members-count');
 
     function renderAdminUsers(providedData = null) {
-        // Use provided data or fallback to localStorage
+        // ✅ Query DOM fresh every time to avoid stale reference
+        const container = document.getElementById('admin-user-list');
+        const countEl = document.getElementById('total-members-count');
+
+        // Use provided data directly from Firestore snapshot
         const users = providedData || JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
         
         console.log(`🖥️ [UI Render] Rendering ${users.length} users to the table...`);
@@ -116,16 +120,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Update Count
-        if (totalMembersEl) totalMembersEl.textContent = users.length.toLocaleString();
+        if (countEl) countEl.textContent = users.length.toLocaleString();
 
-        if (users.length === 0) {
-            console.log("⚠️ No users found in localStorage to render.");
-            if (userListContainer) userListContainer.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
+        if (!container) {
+            console.warn("⚠️ #admin-user-list element not found in DOM!");
             return;
         }
 
-        if (userListContainer) {
-            userListContainer.innerHTML = users.map((u, index) => {
+        if (users.length === 0) {
+            container.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
+            return;
+        }
+
+        container.innerHTML = users.map((u, index) => {
             const username = u.username || 'Unknown';
             const email = u.email || 'No Email';
             const password = u.password || '******';
@@ -168,7 +175,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
-        }
     }
 
     window.editCustomerDiscount = (index) => {
