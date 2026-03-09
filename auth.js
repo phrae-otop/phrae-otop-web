@@ -1,4 +1,4 @@
-const AUTH_VERSION = "v1.1.0-online-fix";
+const AUTH_VERSION = "v1.1.1-unlimited-reg";
 console.log(`[Auth System] Version: ${AUTH_VERSION}`);
 
 const AUTH_CONFIG = {
@@ -34,11 +34,13 @@ const Auth = {
         }
 
         try {
-            // Check if user already exists
+            /* 
+            // Check if user already exists (Disabled for 'Unlimited' registration)
             const existingUser = await window.db.collection('users').where('email', '==', email).get();
             if (!existingUser.empty) {
                 return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว / Email already registered' };
             }
+            */
 
             const newUserRef = window.db.collection('users').doc();
             const newUser = {
