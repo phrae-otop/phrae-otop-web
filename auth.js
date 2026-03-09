@@ -52,6 +52,7 @@ const Auth = {
             console.log("Firestore: Saving new user document...");
             await newUserRef.set(newUser);
             console.log("✅ User document saved successfully in Firestore");
+            alert('สมัครสมาชิกสำเร็จ! ข้อมูลถูกบันทึกลงฐานข้อมูลออนไลน์แล้ว / Registration Successful!');
 
             // Auto login after register
             const sessionUser = { ...newUser };

@@ -109,11 +109,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderAdminUsers = () => {
         // Read directly from the latest snapshot data stored in localStorage
         const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        
+        console.log(`🖥️ [UI Render] Rendering ${users.length} users to the table...`);
+        if (users.length > 0) {
+            console.log("👥 Users to render:", users.map(u => u.email).join(', '));
+        }
 
         // Update Count
         if (totalMembersEl) totalMembersEl.textContent = users.length.toLocaleString();
 
         if (users.length === 0) {
+            console.log("⚠️ No users found in localStorage to render.");
             userListContainer.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
             return;
         }
@@ -645,11 +651,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 localStorage.setItem('adminLastUserCount', currentCount);
 
-                // If currently viewing users tab, re-render
-                const usersTab = document.getElementById('users-tab');
-                if (usersTab && usersTab.classList.contains('active')) {
-                    renderAdminUsers();
-                }
+                // Always re-render if we can, to ensure UI is fresh
+                renderAdminUsers();
 
             }, (error) => {
                 console.error("Firestore Users Error:", error);
