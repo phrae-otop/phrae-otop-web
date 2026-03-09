@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userListContainer = document.getElementById('admin-user-list');
     const totalMembersEl = document.getElementById('total-members-count');
 
-    const renderAdminUsers = () => {
+    function renderAdminUsers() {
         // Read directly from the latest snapshot data stored in localStorage
         const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
         
@@ -120,11 +120,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (users.length === 0) {
             console.log("⚠️ No users found in localStorage to render.");
-            userListContainer.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
+            if (userListContainer) userListContainer.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
             return;
         }
 
-        userListContainer.innerHTML = users.map((u, index) => {
+        if (userListContainer) {
+            userListContainer.innerHTML = users.map((u, index) => {
             const username = u.username || 'Unknown';
             const email = u.email || 'No Email';
             const password = u.password || '******';
@@ -167,7 +168,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
-    };
+        }
+    }
 
     window.editCustomerDiscount = (index) => {
         const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
@@ -309,8 +311,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         pTitleEnInput.addEventListener('input', (e) => autoCategorize(e.target.value));
     }
 
-    const renderAdminProducts = async () => {
+    async function renderAdminProducts() {
         const productTableBody = document.getElementById('admin-product-list');
+        if (!productTableBody) return;
         productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
 
         const products = window.getProducts ? await window.getProducts() : [];
@@ -664,11 +667,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("Database not ready for user subscription. Retrying in 2s...");
             setTimeout(subscribeUsers, 2000);
         }
-    };
+    }
     subscribeUsers();
 
     // 2. Subscribe to ORDERS
-    const subscribeOrders = () => {
+    function subscribeOrders() {
         if (window.db) {
             window.db.collection('orders').orderBy('date', 'desc').onSnapshot((snapshot) => {
                 const orders = [];
@@ -726,7 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const renderAdminOrders = (highlightFirst = false) => {
+    function renderAdminOrders(highlightFirst = false) {
         const pendingOrders = displayedOrders.filter(o => !o.status || o.status === 'pending');
 
         if (pendingOrders.length === 0) {
@@ -789,7 +792,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const renderShippingOrders = () => {
+    function renderShippingOrders() {
         const shippingOrders = displayedOrders.filter(o => o.status === 'shipping');
 
         if (shippingOrders.length === 0) {
@@ -847,7 +850,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    const renderHistoryOrders = () => {
+    function renderHistoryOrders() {
         const historyOrders = displayedOrders.filter(o => o.status === 'delivered');
 
         // Calculate statistics
