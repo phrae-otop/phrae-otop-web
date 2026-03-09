@@ -105,41 +105,74 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.target.files[0];
             if (!file) return;
 
+            // Show loading indicator
+            if (slipPreviewContainer) {
+                slipPreviewContainer.innerHTML = `
+                    <div style="text-align:center; padding:20px; color:var(--primary-color);">
+                        <i class="fas fa-spinner fa-spin"></i> กำลังเตรียมรูปภาพ... / Processing Image...
+                    </div>
+                `;
+            }
+
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
+                    try {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
 
-                    // Calculate new dimensions (max width/height 800px)
-                    const MAX_SIZE = 800;
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
+                        // Calculate new dimensions (max width/height 800px)
+                        const MAX_SIZE = 800;
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
                         }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Compress to JPEG with 0.7 quality
+                        currentSlipBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                        // Show preview
+                        if (slipPreviewContainer) {
+                            slipPreviewContainer.innerHTML = `
+                                <div style="position:relative; margin-top:15px;">
+                                    <img src="${currentSlipBase64}" alt="Slip Preview" style="width:100%; border-radius:12px; border:2px solid var(--primary-color); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+                                    <div style="position:absolute; top:10px; right:10px; background:var(--primary-color); color:white; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold;">
+                                        เตรียมพร้อมแล้ว / Ready
+                                    </div>
+                                </div>
+                            `;
                         }
+                        console.log("✅ Slip compressed successfully. Size:", (currentSlipBase64.length / 1024).toFixed(2), "KB");
+                    } catch (err) {
+                        console.error("❌ Compression error:", err);
+                        alert('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ / Error processing image');
+                        if (slipPreviewContainer) slipPreviewContainer.innerHTML = '';
                     }
-
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Compress to JPEG with 0.7 quality
-                    currentSlipBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
-                    // Show preview
-                    slipPreviewContainer.innerHTML = `<img src="${currentSlipBase64}" alt="Slip Preview" style="width:100%; border-radius:8px; border:1px solid #444; margin-top:10px;">`;
+                };
+                img.onerror = () => {
+                    alert('ไม่สามารถโหลดรูปภาพได้ / Failed to load image');
+                    if (slipPreviewContainer) slipPreviewContainer.innerHTML = '';
                 };
                 img.src = event.target.result;
+            };
+            reader.onerror = () => {
+                alert('เกิดข้อผิดพลาดในการอ่านไฟล์ / Error reading file');
+                if (slipPreviewContainer) slipPreviewContainer.innerHTML = '';
             };
             reader.readAsDataURL(file);
         });
@@ -215,22 +248,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 // WRITE TO FIRESTORE
-                if (typeof window.db !== 'undefined') {
-                    await window.db.collection('orders').add(newOrder);
-
-                    // Reduce stock logic (same as before)
-                    const products = window.getProducts ? await window.getProducts() : [];
-                    const batch = window.db.batch();
-
-                    for (const cartItem of cart) {
-                        const product = products.find(p => p.id === cartItem.id);
-                        if (product) {
-                            const productRef = window.db.collection('products').doc(product.id);
-                            const newStock = Math.max(0, (product.stock || 0) - cartItem.quantity);
-                            batch.update(productRef, { stock: newStock });
+                let db = window.db;
+                if (!db) {
+                    // Wait up to 3 seconds for DB
+                    for (let i = 0; i < 30; i++) {
+                        await new Promise(r => setTimeout(r, 100));
+                        if (window.db) {
+                            db = window.db;
+                            break;
                         }
                     }
-                    await batch.commit();
+                }
+
+                if (db) {
+                    await db.collection('orders').add(newOrder);
+
+                    // Reduce stock logic
+                    try {
+                        const products = window.getProducts ? await window.getProducts() : [];
+                        const batch = db.batch();
+
+                        for (const cartItem of cart) {
+                            const product = products.find(p => p.id === cartItem.id);
+                            if (product) {
+                                const productRef = db.collection('products').doc(product.id);
+                                const newStock = Math.max(0, (product.stock || 0) - cartItem.quantity);
+                                batch.update(productRef, { stock: newStock });
+                            }
+                        }
+                        await batch.commit();
+                    } catch (stockError) {
+                        console.warn("Stock update failed (non-critical):", stockError);
+                    }
                 } else {
                     // Fallback
                     let orders = JSON.parse(localStorage.getItem('otop_orders')) || [];
