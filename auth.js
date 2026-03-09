@@ -1,6 +1,5 @@
-/**
- * auth.js - Handles User Authentication and Session Management
- */
+const AUTH_VERSION = "v1.1.0-online-fix";
+console.log(`[Auth System] Version: ${AUTH_VERSION}`);
 
 const AUTH_CONFIG = {
     USER_KEY: 'phrae_otop_currentUser',
@@ -16,8 +15,22 @@ const Auth = {
 
     // Register a new user
     async register(username, email, password) {
-        if (typeof window.db === 'undefined') {
-            return { success: false, message: 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่ภายหลัง / Database connection error' };
+        // Robust DB check
+        let db = window.db;
+        if (!db) {
+            console.log("DB not ready, waiting 3 seconds...");
+            for (let i = 0; i < 30; i++) {
+                await new Promise(r => setTimeout(r, 100));
+                if (window.db) {
+                    db = window.db;
+                    break;
+                }
+            }
+        }
+
+        if (!db) {
+            console.error("DB connection timed out in Auth.register");
+            return { success: false, message: 'ระบบฐานข้อมูลขัดข้อง (Timeout) / Database connection error' };
         }
 
         try {
@@ -36,7 +49,9 @@ const Auth = {
                 createdAt: new Date().toISOString()
             };
 
+            console.log("Firestore: Saving new user document...");
             await newUserRef.set(newUser);
+            console.log("✅ User document saved successfully in Firestore");
 
             // Auto login after register
             const sessionUser = { ...newUser };

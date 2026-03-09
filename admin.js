@@ -1,4 +1,6 @@
 // admin.js - Refactored for Compat SDK
+const ADMIN_VERSION = "v1.1.0-online-fix";
+console.log(`[Admin System] Version: ${ADMIN_VERSION}`);
 
 document.addEventListener('DOMContentLoaded', async () => {
     const currentUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
@@ -651,6 +653,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             }, (error) => {
                 console.error("Firestore Users Error:", error);
+                if (error.code === 'permission-denied') {
+                    alert("⚠️ Firestore Permission Denied: แอดมินไม่มีสิทธิ์อ่านข้อมูลสมาชิก กรุณาตรวจสอบ Firebase Rules / Admin has no read permission.");
+                }
             });
         } else {
             console.warn("Database not ready for user subscription. Retrying in 2s...");
