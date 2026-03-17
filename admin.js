@@ -1014,11 +1014,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allChatMessages = []; // Cache from Firestore
     let lastUnreadMsgCount = 0;
 
-    // Subscribe to ALL chats in real-time from Firestore
+    // Subscribe to ALL chats in real-time from Firestore (no orderBy to avoid index requirement)
     if (window.db) {
-        window.db.collection('chats').orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+        window.db.collection('chats').onSnapshot((snapshot) => {
             allChatMessages = [];
             snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+            // Sort client-side by timestamp
+            allChatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             console.log(`✅ [Chat Sync] ${allChatMessages.length} chat messages loaded.`);
             renderAdminChat();
         }, (error) => {
@@ -1028,14 +1030,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('⏳ Firestore not ready for chat. Retrying...');
         setTimeout(() => {
             if (window.db) {
-                window.db.collection('chats').orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+                window.db.collection('chats').onSnapshot((snapshot) => {
                     allChatMessages = [];
                     snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+                    allChatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                     renderAdminChat();
                 });
             }
         }, 3000);
     }
+
 
     // Send admin message to Firestore
     async function sendAdminMessage(image = null) {
