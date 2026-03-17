@@ -148,11 +148,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    window.editCustomerDiscount = (index) => {
-        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        window.editCustomerDiscount = async (index) => {
+        const users = window.adminUsersCache || [];
         const user = users[index];
 
-        if (!user) return;
+        if (!user || !user.id || !window.db) {
+            alert('ไม่พบข้อมูลผู้ใช้ในระบบ หรือเชื่อมต่อฐานข้อมูลไม่ได้');
+            return;
+        }
 
         const currentDiscount = user.discount || 0;
         const newDiscount = prompt(`กำหนดส่วนลดสำหรับ: ${user.username}\n\nส่วนลดปัจจุบัน: ${currentDiscount}%\n\nกรอกส่วนลดใหม่ (0-100):`, currentDiscount);
@@ -165,11 +168,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        users[index].discount = discountValue;
-        localStorage.setItem('phrae_otop_users', JSON.stringify(users));
-
-        alert(`✅ อัปเดตส่วนลดเรียบร้อย!\n${user.username}: ${discountValue}%`);
-        renderAdminUsers();
+        try {
+            await window.db.collection('users').doc(user.id).update({ discount: discountValue });
+            alert(`✅ อัปเดตส่วนลดเรียบร้อย!\n${user.username}: ${discountValue}%`);
+        } catch (error) {
+            console.error('Error updating discount:', error);
+            alert('❌ เกิดข้อผิดพลาดในการอัปเดตส่วนลด');
+        }
     };
 
     window.viewUserHistory = (userId, username) => {
@@ -215,11 +220,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-    window.editCustomerPassword = (index) => {
-        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+        window.editCustomerPassword = async (index) => {
+        const users = window.adminUsersCache || [];
         const user = users[index];
 
-        if (!user) return;
+        if (!user || !user.id || !window.db) {
+            alert('ไม่พบข้อมูลผู้ใช้ในระบบ หรือเชื่อมต่อฐานข้อมูลไม่ได้');
+            return;
+        }
 
         const newPassword = prompt(`แก้ไขรหัสผ่านสำหรับ: ${user.username}\n\nกรอกรหัสผ่านใหม่:`, user.password);
 
@@ -230,11 +238,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        users[index].password = newPassword.trim();
-        localStorage.setItem('phrae_otop_users', JSON.stringify(users));
-
-        alert('แก้ไขรหัสผ่านเรียบร้อยแล้ว!');
-        renderAdminUsers();
+        try {
+            await window.db.collection('users').doc(user.id).update({ password: newPassword.trim() });
+            alert('✅ แก้ไขรหัสผ่านเรียบร้อยแล้ว!');
+        } catch (error) {
+            console.error('Error updating password:', error);
+            alert('❌ เกิดข้อผิดพลาดในการแก้ไขรหัสผ่าน');
+        }
     };
 
     // PRODUCT MANAGEMENT
