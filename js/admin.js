@@ -1,154 +1,270 @@
-// admin.js - Refactored for Compat SDK
-
+// Admin Dashboard Logic - Using Firebase Firestore
 document.addEventListener('DOMContentLoaded', async () => {
-    const currentUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
-
-    // Auth Guard
-    if (sessionStorage.getItem('isAdmin') !== 'true' || !currentUser) {
+    // Check Auth - Only permit role:admin or role:staff
+    const currentAdminUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
+    if (!currentAdminUser || (currentAdminUser.role !== 'admin' && currentAdminUser.role !== 'staff')) {
         window.location.href = 'admin-login.html';
         return;
     }
 
-    // RBAC: Role-Based Access Control
-    // If STAFF, hide specific elements
-    if (currentUser.role === 'staff') {
-        // Hide Financial Stats
-        const revenueCard = document.getElementById('total-revenue')?.closest('.stat-card');
-        if (revenueCard) revenueCard.style.display = 'none';
+    // Role-based UI rendering
+    if (currentAdminUser.role === 'staff') {
+        const totalRevenueCard = document.getElementById('total-revenue')?.parentElement;
+        if (totalRevenueCard) totalRevenueCard.style.display = 'none';
 
-        // Hide Settings Tab
-        const settingsTabBtn = document.querySelector('.sidebar-nav a[data-tab="settings"]');
-        if (settingsTabBtn) settingsTabBtn.style.display = 'none';
+        const historyMenu = document.querySelector('a[data-target="history"]');
+        if (historyMenu) {
+            historyMenu.style.display = 'none';
+        }
 
-        // Hide Delete Buttons (Optional, let's keep it simple for now or css hide)
-        document.body.classList.add('role-staff');
+        const settingsMenu = document.querySelector('a[data-target="settings"]');
+        if (settingsMenu) {
+            settingsMenu.style.display = 'none';
+        }
     }
 
-    // Render Admin Name
-    const adminNameDisplay = document.querySelector('.sidebar-header span');
-    if (adminNameDisplay) adminNameDisplay.textContent = `${currentUser.name} (${currentUser.role.toUpperCase()})`;
+    // Header updates
+    const adminNameDisplay = document.getElementById('admin-name-display');
+    if (adminNameDisplay) {
+        adminNameDisplay.textContent = currentAdminUser.username;
+    }
 
+    // Initialize display logic
+    let displayedOrders = [];
+    let allChatMessages = [];
 
-    // Logout Function
-    window.adminLogout = () => {
-        if (confirm('ต้องการออกจากระบบใช่หรือไม่? / Are you sure you want to logout?')) {
-            sessionStorage.removeItem('isAdmin');
-            window.location.href = 'admin-login.html';
-        }
-    };
+    // TABS LOGIC
+    const sidebarMenuItems = document.querySelectorAll('.sidebar-menu li');
+    const sections = document.querySelectorAll('.dashboard-section');
 
-    // TAB SWITCHING
-    const tabs = document.querySelectorAll('.sidebar-nav a[data-tab]');
-    const contents = document.querySelectorAll('.tab-content');
+    sidebarMenuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const target = item.querySelector('a').dataset.target;
+            
+            // Check permissions for history and settings
+            if (currentAdminUser.role === 'staff' && (target === 'history' || target === 'settings')) {
+                alert('คุณไม่มีสิทธิ์เข้าถึงส่วนนี้');
+                return;
+            }
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            const target = tab.getAttribute('data-tab');
+            // UI
+            sidebarMenuItems.forEach(li => li.classList.remove('active'));
+            item.classList.add('active');
+            sections.forEach(sec => sec.classList.remove('active'));
+            const targetSection = document.getElementById(target);
+            if (targetSection) targetSection.classList.add('active');
 
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-
-            contents.forEach(c => c.classList.remove('active'));
-            document.getElementById(`${target}-tab`).classList.add('active');
-
+            // Lazy Load if needed
+            if (target === 'customers') renderAdminUsers();
             if (target === 'products') renderAdminProducts();
-            if (target === 'orders') renderAdminOrders();
-            if (target === 'shipping') renderShippingOrders();
-            if (target === 'history') renderHistoryOrders();
-            if (target === 'users') renderAdminUsers();
+            if (target === 'chat') renderAdminChat();
         });
     });
 
-    // NOTIFICATION SOUND SYSTEM
-    let isSoundOn = localStorage.getItem('adminSoundEnabled') !== 'false'; // Default true
-    let lastUnreadMsgCount = 0;
-    const soundToggle = document.getElementById('toggle-sound');
-    const soundIcon = document.getElementById('sound-icon');
-    const soundStatus = document.getElementById('sound-status');
-    const audioEl = document.getElementById('notification-sound');
+    // SETTINGS / NOTIFICATIONS
+    const notifToggle = document.getElementById('notif-toggle');
+    const notifStatus = document.getElementById('notif-status');
+    const testNotifSound = document.getElementById('test-notif-sound');
+    let isNotifEnabled = localStorage.getItem('phrae_otop_admin_notif') !== 'false';
 
-    // Update UI based on state
-    const updateSoundUI = () => {
-        if (!soundToggle) return;
-        if (isSoundOn) {
-            soundIcon.className = 'fas fa-volume-up';
-            soundStatus.textContent = 'เปิด';
-            soundStatus.style.color = '#4CAF50';
+    function updateNotifUI() {
+        if (!notifToggle || !notifStatus) return;
+        if (isNotifEnabled) {
+            notifToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+            notifToggle.style.color = '#4CAF50';
+            notifStatus.textContent = 'เปิด';
+            notifStatus.style.color = '#4CAF50';
         } else {
-            soundIcon.className = 'fas fa-volume-mute';
-            soundStatus.textContent = 'ปิด';
-            soundStatus.style.color = '#f44336';
+            notifToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            notifToggle.style.color = '#F44336';
+            notifStatus.textContent = 'ปิด';
+            notifStatus.style.color = '#F44336';
         }
-    };
+    }
 
-    // Initialize UI
-    updateSoundUI();
+    if (notifToggle) {
+        notifToggle.addEventListener('click', () => {
+            isNotifEnabled = !isNotifEnabled;
+            localStorage.setItem('phrae_otop_admin_notif', isNotifEnabled);
+            updateNotifUI();
+        });
+        updateNotifUI(); // Initial
+    }
 
-    // Toggle Handler
-    if (soundToggle) {
-        soundToggle.addEventListener('click', () => {
-            isSoundOn = !isSoundOn;
-            localStorage.setItem('adminSoundEnabled', isSoundOn);
-            updateSoundUI();
+    if (testNotifSound) {
+        testNotifSound.addEventListener('click', playNotificationSound);
+    }
 
-            // Test sound if turning on
-            if (isSoundOn && audioEl) {
-                audioEl.volume = 0.5;
-                audioEl.play().catch(e => console.warn('Audio play blocked:', e));
+    function playNotificationSound() {
+        if (!isNotifEnabled) return;
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Audio tracking issue - user interaction needed:', e));
+    }
+
+    // LOGOUT
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                sessionStorage.removeItem('currentAdminUser');
+                window.location.href = 'admin-login.html';
             }
         });
     }
 
+    // Wait for Firestore to initialize
+    for (let i = 0; i < 30; i++) {
+        if (window.db) break;
+        await new Promise(r => setTimeout(r, 100)); // wait up to 3 seconds
+    }
+
+    if (!window.db) {
+        alert('เชื่อมต่อฐานข้อมูลล้มเหลว กรุณารีเฟรชหน้า');
+        return;
+    }
+
+    // ============================================
+    // REAL-TIME FIRESTORE LISTENERS
+    // ============================================
+
+    // 1. Listen to 'users' collection
+    window.db.collection('users').onSnapshot((snapshot) => {
+        const users = [];
+        snapshot.forEach(doc => {
+            users.push({ id: doc.id, ...doc.data() });
+        });
+        window.adminUsersCache = users; // Cache globally
+        if (document.getElementById('customers')?.classList.contains('active')) {
+            renderAdminUsers();
+        }
+    });
+
+    // 2. Listen to 'orders' collection (for dashboard and history)
+    window.db.collection('orders').onSnapshot((snapshot) => {
+        displayedOrders = [];
+        snapshot.forEach(doc => {
+            displayedOrders.push({ id: doc.id, ...doc.data() });
+        });
+        // Sort newest first
+        displayedOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        updateDashboardStats(displayedOrders);
+        renderOrders('pending', document.getElementById('order-list'));
+        renderOrders('history', document.getElementById('history-orders-list'));
+        
+        // Count pending
+        const pendingCount = displayedOrders.filter(o => o.status === 'pending').length;
+        if (document.getElementById('pending-orders-count')) {
+            document.getElementById('pending-orders-count').textContent = pendingCount;
+        }
+    });
+
+    // 3. Listen to 'chats' collection (Real-time sync)
+    // Subscribe to ALL chats in real-time from Firestore (no orderBy to avoid index requirement)
+    if (window.db) {
+        console.log('📡 Starting chat listener on Firestore...');
+        window.db.collection('chats').onSnapshot((snapshot) => {
+            allChatMessages = [];
+            snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+            // Sort client-side by timestamp
+            allChatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            console.log(`✅ [Chat Sync] ${allChatMessages.length} chat messages loaded from DB. Snapshot empty: ${snapshot.empty}`);
+            renderAdminChat();
+        }, (error) => {
+            console.error('❌ Chat Firestore Error:', error);
+        });
+    } else {
+        console.warn('⏳ Admin chat: Firestore not ready, retrying...');
+        let retries = 0;
+        const chatInterval = setInterval(() => {
+            retries++;
+            if (window.db) {
+                clearInterval(chatInterval);
+                console.log('📡 Firestore ready, starting chat listener...');
+                window.db.collection('chats').onSnapshot((snapshot) => {
+                    allChatMessages = [];
+                    snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+                    allChatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    console.log(`✅ [Chat Sync Retry] ${allChatMessages.length} messages loaded.`);
+                    renderAdminChat();
+                });
+            } else if (retries > 30) {
+                clearInterval(chatInterval);
+                console.error('❌ Could not connect to Firestore for chat after 30 attempts.');
+            }
+        }, 1000);
+    }
+
+
+    // ============================================
+    // UI RENDERING FUNCTIONS
+    // ============================================
+
     // MEMBER MANAGEMENT
-    const userListContainer = document.getElementById('admin-user-list');
-    const totalMembersEl = document.getElementById('total-members-count');
+    window.adminUsersCache = []; // Global cache for users
 
-    const renderAdminUsers = () => {
-        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
+    function renderAdminUsers() {
+        const container = document.getElementById('admin-user-list');
+        const countEl = document.getElementById('total-members-count');
 
-        // Update Count
-        if (totalMembersEl) totalMembersEl.textContent = users.length.toLocaleString();
+        const users = window.adminUsersCache;
+        if (countEl) countEl.textContent = users.length.toLocaleString();
+
+        if (!container) return;
 
         if (users.length === 0) {
-            userListContainer.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ / No registered members</td></tr>';
+            container.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีสมาชิกในระบบ</td></tr>';
             return;
         }
 
-        userListContainer.innerHTML = users.map((u, index) => `
-            <tr>
-                <td>
-                    <div style="display:flex; align-items:center;">
-                        <div style="width:30px; height:30px; background:var(--primary-color); border-radius:50%; color:#000; display:flex; justify-content:center; align-items:center; margin-right:10px; font-weight:bold;">
-                            ${u.username.charAt(0).toUpperCase()}
-                        </div>
-                        ${u.username}
-                    </div>
-                </td>
-                <td>${u.email}</td>
-                <td style="font-family:monospace; color:#aaa;">${u.password}</td>
-                <td>
-                    <span style="background:${(u.discount && u.discount > 0) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(128, 128, 128, 0.2)'}; color:${(u.discount && u.discount > 0) ? '#4CAF50' : '#888'}; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:0.85rem;">
-                        ${u.discount || 0}%
-                    </span>
-                </td>
-                <td>${new Date(u.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                <td>
-                    <button class="btn-icon" onclick="viewUserHistory('${u.id}', '${u.username}')" title="ดูประวัติการสั่งซื้อ" style="margin-right:5px; background:rgba(33, 150, 243, 0.2); color:#2196F3;">
-                        <i class="fas fa-history"></i>
-                    </button>
-                    <button class="btn-icon" onclick="editCustomerDiscount(${index})" title="แก้ไขส่วนลด" style="margin-right:5px; background:rgba(76, 175, 80, 0.2); color:#4CAF50;">
-                        <i class="fas fa-percent"></i>
-                    </button>
-                    <button class="btn-icon edit" onclick="editCustomerPassword(${index})" title="แก้ไขรหัสผ่าน">
-                        <i class="fas fa-key"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    };
+        container.innerHTML = users.map((u, index) => {
+            const username = u.username || 'Unknown';
+            const email = u.email || 'No Email';
+            const password = u.password || '******';
+            const createdAt = u.createdAt ? new Date(u.createdAt).toLocaleDateString('th-TH', { 
+                year: 'numeric', month: 'long', day: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+            }) : 'N/A';
+            const discount = u.discount || 0;
+            const initial = username.charAt(0).toUpperCase();
 
-        window.editCustomerDiscount = async (index) => {
+            return `
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center;">
+                            <div style="width:30px; height:30px; background:var(--primary-color); border-radius:50%; color:#000; display:flex; justify-content:center; align-items:center; margin-right:10px; font-weight:bold;">
+                                ${initial}
+                            </div>
+                            ${username}
+                        </div>
+                    </td>
+                    <td>${email}</td>
+                    <td style="font-family:monospace; color:#aaa;">${password}</td>
+                    <td>
+                        <span style="background:${discount > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(128, 128, 128, 0.2)'}; color:${discount > 0 ? '#4CAF50' : '#888'}; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:0.85rem;">
+                            ${discount}%
+                        </span>
+                    </td>
+                    <td>${createdAt}</td>
+                    <td>
+                        <button class="btn-icon" onclick="viewUserHistory('${u.id}', '${username.replace(/'/g, "\\'")}')" title="ดูประวัติการสั่งซื้อ" style="margin-right:5px; background:rgba(33, 150, 243, 0.2); color:#2196F3;">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button class="btn-icon" onclick="editCustomerDiscount(${index})" title="แก้ไขส่วนลด" style="margin-right:5px; background:rgba(76, 175, 80, 0.2); color:#4CAF50;">
+                            <i class="fas fa-percent"></i>
+                        </button>
+                        <button class="btn-icon edit" onclick="editCustomerPassword(${index})" title="แก้ไขรหัสผ่าน">
+                            <i class="fas fa-key"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.editCustomerDiscount = async (index) => {
         const users = window.adminUsersCache || [];
         const user = users[index];
 
@@ -160,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentDiscount = user.discount || 0;
         const newDiscount = prompt(`กำหนดส่วนลดสำหรับ: ${user.username}\n\nส่วนลดปัจจุบัน: ${currentDiscount}%\n\nกรอกส่วนลดใหม่ (0-100):`, currentDiscount);
 
-        if (newDiscount === null) return; // Cancelled
+        if (newDiscount === null) return;
 
         const discountValue = parseFloat(newDiscount);
         if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
@@ -170,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             await window.db.collection('users').doc(user.id).update({ discount: discountValue });
-            alert(`✅ อัปเดตส่วนลดเรียบร้อย!\n${user.username}: ${discountValue}%`);
+            // Notification is handled globally by listener
         } catch (error) {
             console.error('Error updating discount:', error);
             alert('❌ เกิดข้อผิดพลาดในการอัปเดตส่วนลด');
@@ -188,20 +304,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
         modal.style.display = 'flex';
 
-        // Filter orders from the live displayedOrders (which comes from Firestore)
-        // Match by userId (preferred) or by matching customer info
         let userOrders = displayedOrders.filter(o => o.userId == userId);
-
-        // Fallback: if userId is guest or mismatch, try loose matching by name/email if user object has it?
-        // For now, rely on userId which we fixed in cart.js
 
         if (userOrders.length === 0) {
             list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#aaa;">ไม่พบประวัติการสั่งซื้อ</td></tr>';
             return;
         }
-
-        // Sort new to old
-        userOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         list.innerHTML = userOrders.map(o => `
             <tr>
@@ -220,1212 +328,252 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     };
 
-        window.editCustomerPassword = async (index) => {
+    window.editCustomerPassword = async (index) => {
         const users = window.adminUsersCache || [];
         const user = users[index];
 
         if (!user || !user.id || !window.db) {
-            alert('ไม่พบข้อมูลผู้ใช้ในระบบ หรือเชื่อมต่อฐานข้อมูลไม่ได้');
+            alert('ไม่พบข้อมูลผู้ใช้');
             return;
         }
 
         const newPassword = prompt(`แก้ไขรหัสผ่านสำหรับ: ${user.username}\n\nกรอกรหัสผ่านใหม่:`, user.password);
-
-        if (newPassword === null) return; // Cancelled
-
-        if (!newPassword.trim()) {
-            alert('รหัสผ่านต้องไม่เป็นค่าว่าง');
-            return;
-        }
+        if (newPassword === null) return;
+        if (!newPassword.trim()) { alert('ค่าว่างไม่ได้'); return; }
 
         try {
             await window.db.collection('users').doc(user.id).update({ password: newPassword.trim() });
-            alert('✅ แก้ไขรหัสผ่านเรียบร้อยแล้ว!');
         } catch (error) {
-            console.error('Error updating password:', error);
-            alert('❌ เกิดข้อผิดพลาดในการแก้ไขรหัสผ่าน');
+            alert('เกิดข้อผิดพลาด');
         }
     };
 
-    // PRODUCT MANAGEMENT
-    const productTableBody = document.getElementById('admin-product-list');
-    const productForm = document.getElementById('product-form');
-    const productModal = document.getElementById('product-modal');
+    // ORDER PROCESSING (Wait vs Update)
+    function updateDashboardStats(orders) {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const totalSales = orders.filter(o => o.status !== 'cancelled')
+                                 .reduce((sum, o) => sum + o.total, 0);
+        document.getElementById('total-revenue').textContent = `฿${totalSales.toLocaleString()}`;
 
-    // AUTO-CATEGORIZATION LOGIC
-    const pTitleInput = document.getElementById('p-title');
-    const pTitleEnInput = document.getElementById('p-title-en');
-    const pCategorySelect = document.getElementById('p-category');
+        const todaySales = orders.filter(o => o.status !== 'cancelled' && o.date.startsWith(today))
+                                 .reduce((sum, o) => sum + o.total, 0);
+        document.getElementById('today-sales').textContent = `฿${todaySales.toLocaleString()}`;
 
-    const autoCategorize = (text) => {
-        if (!text || !pCategorySelect) return;
-        text = text.toLowerCase();
+        const newOrders = orders.filter(o => o.status === 'pending').length;
+        document.getElementById('new-orders').textContent = newOrders;
 
-        // Keywords mapping
-        if (text.includes('ผ้า') || text.includes('เสื้อ') || text.includes('หม้อห้อม') || text.includes('shirt') || text.includes('fabric') || text.includes('textile') || text.includes('silk') || text.includes('cotton')) {
-            pCategorySelect.value = 'textile';
-        } else if (text.includes('ไม้') || text.includes('สัก') || text.includes('wood') || text.includes('teak') || text.includes('carving') || text.includes('saks') || text.includes('แกะสลัก')) {
-            pCategorySelect.value = 'woodwork';
-        } else if (text.includes('สาน') || text.includes('ตะกร้า') || text.includes('basket') || text.includes('rattan') || text.includes('bamboo') || text.includes('งานฝีมือ')) {
-            pCategorySelect.value = 'handicraft';
-        } else if (text.includes('เซรามิก') || text.includes('ceramic') || text.includes('ถ้วย') || text.includes('ชาม') || text.includes('pottery') || text.includes('clay')) {
-            pCategorySelect.value = 'ceramic';
-        } else if (text.includes('สมุนไพร') || text.includes('shampoo') || text.includes('soap') || text.includes('balm') || text.includes('ยา') || text.includes('อาหาร') || text.includes('food') || text.includes('honey') || text.includes('น้ำผึ้ง') || text.includes('แคบหมู') || text.includes('ข้าวแต๋น')) {
-            pCategorySelect.value = 'herbal';
-        } else if (text.includes('สร้อย') || text.includes('แหวน') || text.includes('jewelry') || text.includes('silver') || text.includes('gold') || text.includes('กำไล')) {
-            pCategorySelect.value = 'jewelry';
-        } else {
-            // Default to other if no specific match, but usually we let user decide or leave as is
-            // pCategorySelect.value = 'other'; 
+        const lowStockCount = (window.cachedProducts || []).filter(p => !p.inStock || p.inStock === false).length;
+        document.getElementById('low-stock').textContent = lowStockCount; // We will need to plug this in via products
+    }
+
+    function renderOrders(filterStatus, container) {
+        if (!container) return;
+        let filtered = displayedOrders;
+        if (filterStatus === 'pending') {
+            filtered = displayedOrders.filter(o => o.status === 'pending' || o.status === 'processing');
         }
-
-        // Visual feedback
-        pCategorySelect.style.border = '1px solid #4CAF50';
-        pCategorySelect.style.boxShadow = '0 0 5px #4CAF50';
-
-        // Remove highlight after 1.5 seconds
-        if (window.catTimeout) clearTimeout(window.catTimeout);
-        window.catTimeout = setTimeout(() => {
-            pCategorySelect.style.border = '1px solid rgba(255,255,255,0.1)';
-            pCategorySelect.style.boxShadow = 'none';
-        }, 1500);
-    };
-
-    if (pTitleInput) {
-        pTitleInput.addEventListener('input', (e) => autoCategorize(e.target.value));
-    }
-    if (pTitleEnInput) {
-        pTitleEnInput.addEventListener('input', (e) => autoCategorize(e.target.value));
-    }
-
-    const renderAdminProducts = async () => {
-        const productTableBody = document.getElementById('admin-product-list');
-        productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
-
-        const products = window.getProducts ? await window.getProducts() : [];
-        if (products.length === 0) {
-            productTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No products found.</td></tr>';
+        
+        if (filtered.length === 0) {
+            container.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#aaa;">ไม่มีรายการสั่งซื้อ${filterStatus === 'pending' ? 'ใหม่' : ''}</td></tr>`;
             return;
         }
 
-        // Category translations
-        const categoryNames = {
-            'textile': 'ผ้าทอ',
-            'handicraft': 'งานฝีมือ',
-            'woodwork': 'งานไม้',
-            'herbal': 'สมุนไพร',
-            'ceramic': 'เครื่องปั้น',
-            'other': 'อื่นๆ'
-        };
+        container.innerHTML = filtered.map(o => {
+            const date = o.displayDate || new Date(o.date).toLocaleDateString('th-TH');
+            const items = o.items.map(i => `<div style="font-size:0.85rem; color:#ccc;">- ${i.title} (x${i.quantity})</div>`).join('');
+            
+            let actions = '';
+            if (currentAdminUser.role === 'admin' || currentAdminUser.role === 'staff') {
+                 if (o.status === 'pending') {
+                     actions = `<button class="btn-action check" onclick="updateOrderStatus('${o.id}', 'processing')" title="รับออเดอร์"><i class="fas fa-check"></i> รับออเดอร์</button>`;
+                 } else if (o.status === 'processing') {
+                     actions = `<button class="btn-action dispatch" onclick="updateOrderStatus('${o.id}', 'shipped')" title="จัดส่งแล้ว"><i class="fas fa-truck"></i> จัดส่ง</button>`;
+                 }
+                 if (filterStatus === 'history') {
+                    // Provide option to cancel maybe
+                 }
+            }
 
-        const categoryColors = {
-            'textile': '#2196F3',
-            'handicraft': '#FF9800',
-            'woodwork': '#795548',
-            'herbal': '#4CAF50',
-            'ceramic': '#9C27B0',
-            'other': '#607D8B'
-        };
-
-        productTableBody.innerHTML = products.map(p => `
+            return `
             <tr>
-                <td><img src="${p.image || 'assets/images/placeholder.png'}" alt="" class="p-thumb" onerror="this.src='assets/images/placeholder.png'"></td>
-                <td class="p-title-cell">
-                    <div>${p.title}</div>
-                    <small>${p.titleEn}</small>
-                </td>
-
-                <td>฿${p.price.toLocaleString()}</td>
+                <td style="font-family:monospace; color:#aaa;">#${o.id.substring(0,6)}</td>
+                <td>${o.customerDetails?.name || 'ลูกค้าทั่วไป'}<div style="font-size:0.8rem;color:#888">${o.customerDetails?.phone || ''}</div></td>
+                <td>${items}</td>
+                <td>฿${o.total.toLocaleString()}</td>
+                <td><span class="status-badge status-${o.status}">${o.status}</span></td>
                 <td>
-                    <span style="color: #ffffff; font-weight: bold;">
-                        ${p.stock || 0} ชิ้น
-                    </span>
-                    <button class="btn-icon" onclick="adjustStock('${p.id}')" title="ปรับสต็อก" style="margin-left:5px;">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </td>
-                <td>
-                    <div class="actions">
-                        <button class="btn-icon edit" onclick="editProduct('${p.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon delete" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i></button>
-                    </div>
+                    ${actions}
+                    <button class="btn-icon edit" onclick="viewOrderDetails('${o.id}')" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button>
                 </td>
             </tr>
-        `).join('');
-    };
+            `;
+        }).join('');
+    }
 
-    window.adjustStock = async (productId) => {
-        const products = await window.getProducts();
-        const product = products.find(p => p.id === productId);
-
-        if (!product) return;
-
-        const newStock = prompt(`ปรับสต็อกสำหรับ: ${product.title}\n\nจำนวนปัจจุบัน: ${product.stock || 0} ชิ้น\n\nกรอกจำนวนใหม่:`, product.stock || 0);
-
-        if (newStock === null) return; // Cancelled
-
-        const stockValue = parseInt(newStock);
-        if (isNaN(stockValue) || stockValue < 0) {
-            alert('กรุณากรอกจำนวนที่ถูกต้อง (ตัวเลขที่มากกว่าหรือเท่ากับ 0)');
-            return;
-        }
-
+    window.updateOrderStatus = async (orderId, newStatus) => {
         try {
-            await window.db.collection('products').doc(productId).update({
-                stock: stockValue
-            });
-            alert(`อัปเดตสต็อกเรียบร้อย!\n${product.title}: ${stockValue} ชิ้น`);
-            renderAdminProducts();
-        } catch (e) {
-            console.error(e);
-            alert('Error updating stock: ' + e.message);
-        }
-    };
-
-    window.openProductModal = async (id = null) => {
-        productModal.style.display = 'flex';
-        productForm.reset();
-        document.getElementById('edit-id').value = '';
-        document.getElementById('modal-title').textContent = 'เพิ่มสินค้าใหม่';
-
-        // Reset Preview UI
-        const preview = document.getElementById('p-image-preview');
-        const placeholder = document.getElementById('upload-placeholder');
-        preview.src = '';
-        preview.style.display = 'none';
-        placeholder.style.display = 'block';
-
-        if (id) {
-            const products = await window.getProducts();
-            const p = products.find(x => x.id === id);
-            if (p) {
-                document.getElementById('edit-id').value = p.id;
-                document.getElementById('p-title').value = p.title;
-                document.getElementById('p-title-en').value = p.titleEn;
-                document.getElementById('p-desc').value = p.desc;
-                document.getElementById('p-desc-en').value = p.descEn;
-                document.getElementById('p-price').value = p.price;
-                document.getElementById('p-stock').value = p.stock || 100;
-                document.getElementById('p-category').value = p.category || 'textile';
-                document.getElementById('p-image').value = p.image;
-
-                // Update Preview UI (Removed re-declarations to fix shadowing)
-                if (p.image) {
-                    preview.src = p.image;
-                    preview.style.display = 'block';
-                    placeholder.style.display = 'none';
-                }
-
-                document.getElementById('modal-title').textContent = 'แก้ไขสินค้า';
-            }
-        }
-    };
-
-    window.handleProductImageUpload = (input) => {
-        const file = input.files[0];
-        if (!file) return;
-
-        // Show loading state/feedback
-        const placeholder = document.getElementById('upload-placeholder');
-        const preview = document.getElementById('p-image-preview');
-        const uploadBtn = input.previousElementSibling || document.querySelector('.upload-controls button');
-        const saveBtn = document.getElementById('save-product-btn');
-
-        if (placeholder) {
-            placeholder.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 3.5rem; color: #ffd700;"></i><p>กำลังประมวลผล... / Processing...</p>';
-        }
-        if (saveBtn) saveBtn.disabled = true;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const maxDim = 640; // Safer conservative limit
-
-                if (width > height) {
-                    if (width > maxDim) {
-                        height *= maxDim / width;
-                        width = maxDim;
-                    }
-                } else {
-                    if (height > maxDim) {
-                        width *= maxDim / height;
-                        height = maxDim;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // Strong compression (0.7) for maximum database reliability
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                document.getElementById('p-image').value = dataUrl;
-
-                // Update Preview UI
-                preview.src = dataUrl;
-                preview.style.display = 'block';
-                placeholder.style.display = 'none';
-
-                // Restore UI state
-                if (placeholder) {
-                    placeholder.innerHTML = '<i class="fas fa-cloud-upload-alt" style="font-size: 3rem; margin-bottom: 10px; color: #ffd700;"></i><p>คลิกเพื่อเลือกไฟล์รูปภาพ / Click to Select Photo</p><span style="font-size: 0.8rem;">(แนะนำขนาด 800x800px)</span>';
-                }
-                if (saveBtn) saveBtn.disabled = false;
-
-                console.log("Image compressed and ready. DataURL length:", dataUrl.length);
-            };
-            img.onerror = () => {
-                alert('ไฟล์รูปภาพไม่ถูกต้อง หรือโหลดไม่ได้ / Invalid image file.');
-            };
-            img.src = e.target.result;
-            input.value = ''; // Reset file input to allow re-selecting same file if needed
-        };
-        reader.readAsDataURL(file);
-    };
-
-    window.closeProductModal = () => {
-        productModal.style.display = 'none';
-    };
-
-    productForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        // If edit-id is empty, it's new. Use null to let Firestore generate (or we generate)
-        // Actually for edit we need ID.
-        let id = document.getElementById('edit-id').value;
-
-        const productData = {
-            title: document.getElementById('p-title').value,
-            titleEn: document.getElementById('p-title-en').value,
-            desc: document.getElementById('p-desc').value,
-            descEn: document.getElementById('p-desc-en').value,
-            price: parseFloat(document.getElementById('p-price').value),
-            stock: parseInt(document.getElementById('p-stock').value) || 100,
-            category: document.getElementById('p-category').value,
-            image: document.getElementById('p-image').value
-        };
-
-        try {
-            console.log("Saving product data:", productData); // DEBUG LOG
-
-            if (id) {
-                // UPSERT: Use set with merge true to ensure it works even if doc was missing
-                await window.db.collection('products').doc(id).set({
-                    ...productData,
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-                console.log("Product upserted (Updated):", id);
-            } else {
-                // CREATE new
-                const docRef = await window.db.collection('products').add({
-                    ...productData,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString() // Ensure it has updatedAt for sorting
-                });
-                console.log("New product added with ID:", docRef.id);
-            }
-
-            // Critical: Refresh local list and UI
-            localStorage.removeItem('otop_products_cache');
-
-            // Wait a moment for Firestore propagation
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            await renderAdminProducts();
-            closeProductModal();
-            alert('บันทึกข้อมูลและรูปภาพเรียบร้อยแล้ว! / Image and data saved successfully!');
-
-            // Force reload to ensure homepage sees it if cached
-            if (confirm('ต้องการรีโหลดหน้าเว็บเพื่อดูการเปลี่ยนแปลงทันทีหรือไม่? / Reload page to see changes?')) {
-                window.location.reload();
-            }
+            await window.db.collection('orders').doc(orderId).update({ status: newStatus });
+            // Notification plays automatically via snapshot event if we configure it
         } catch (error) {
-            console.error("Save Error:", error);
-            alert('เกิดข้อผิดพลาดในการบันทึก: ' + error.message + '\n\nสาเหตุอาจเกิดจากรูปภาพมีขนาดใหญ่เกินไป หรือการเชื่อมต่อฐานข้อมูลขัดข้อง');
-        }
-    });
-
-    window.editProduct = (id) => openProductModal(id);
-
-    window.deleteProduct = async (id) => {
-        // RBAC Check
-        const currentUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
-        if (currentUser && currentUser.role === 'staff') {
-            alert('ขออภัย! พนักงานระดับ Staff ไม่ได้รับอนุญาตให้ลบข้อมูลสินค้า\n\nPermission Denied: Staff cannot delete products.');
-            return;
-        }
-
-        if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้? / Are you sure you want to delete this product?')) {
-            try {
-                await window.db.collection('products').doc(id).delete();
-                console.log("Product deleted:", id);
-
-                // Clear cache
-                localStorage.removeItem('otop_products_cache');
-
-                // Wait for propagation
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                await renderAdminProducts();
-                alert('ลบสินค้าเรียบร้อยแล้ว / Product deleted.');
-
-                // Optional: ask to reload to sync homepage
-                if (confirm('รีโหลดหน้าเว็บเพื่ออัปเดตข้อมูลทันทีหรือไม่? / Reload page to update?')) {
-                    window.location.reload();
-                }
-            } catch (e) {
-                console.error("Delete Error:", e);
-                alert('เกิดข้อผิดพลาดในการลบ: ' + e.message);
-            }
+            console.error(error);
+            alert('อัปเดตสถานะไม่สำเร็จ');
         }
     };
 
-    // ORDER MANAGEMENT
-    const orderListContainer = document.getElementById('admin-order-list');
-    const shippingListContainer = document.getElementById('admin-shipping-list');
-    const historyListContainer = document.getElementById('admin-history-list');
-
-    window.viewSlip = (url) => {
-        const win = window.open();
-        if (win) {
-            win.document.write(`
-                <html>
-                <body style="margin:0; background:#121212; display:flex; justify-content:center; align-items:center; min-height:100vh;">
-                    <img src="${url}" style="max-width:90%; max-height:90vh; border-radius:10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                    <div style="position:fixed; top:20px; left:20px; color:white; font-family:sans-serif; background:rgba(0,0,0,0.5); padding:10px 20px; border-radius:20px;">
-                        รายละเอียดสลิปโอนเงิน / Payment Slip Details
-                    </div>
-                </body>
-                </html>
-            `);
-            win.document.title = "View Payment Slip - Phrae OTOP Admin";
-        }
+    window.viewOrderDetails = (orderId) => {
+        const order = displayedOrders.find(o => o.id === orderId);
+        if(!order) return;
+        alert(`รายการที่สั่ง: \n${order.items.map(i=>i.title + " x" + i.quantity).join('\n')}\n\nที่อยู่จัดส่ง:\n${order.customerDetails?.address || 'ไม่มี'}`);
     };
 
-    // REAL-TIME FIRESTORE LISTENER FOR ORDERS
-    let displayedOrders = []; // cache
 
-    // Subscribe to orders
-    const subscribeOrders = () => {
-        // 1. Load LocalStorage Orders (Fallback/Hybrid)
-        const loadLocalOrders = () => {
-            const localOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
-            return localOrders.map(o => ({ ...o, source: 'local' })); // Tag them
-        };
-
-        const updateDisplay = (firestoreOrders = []) => {
-            const local = loadLocalOrders();
-            // Merge: Prefer Firestore if IDs match (assuming local might be temp)
-            // But usually local orders have no ID or temp ID? 
-            // Let's just concat for now and dedup by ID if possible.
-            // Actually, if pure local, id might be missing or generated. 
-            // Simpler: Just show both unique set.
-
-            const allOrders = [...firestoreOrders, ...local];
-            // Sort by date desc
-            allOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            displayedOrders = allOrders;
-
-            // Re-render current tab
-            const activeTab = document.querySelector('.sidebar-nav a.active')?.getAttribute('data-tab');
-            if (activeTab === 'orders') renderAdminOrders();
-            if (activeTab === 'shipping') renderShippingOrders();
-            if (activeTab === 'history') renderHistoryOrders();
-
-            // Check for new orders logic (Sound) - rudimentary check
-            const currentCount = allOrders.length;
-            const lastCount = parseInt(localStorage.getItem('adminLastOrderCount') || 0);
-            if (currentCount > lastCount) {
-                const audio = document.getElementById('notification-sound');
-                if (audio && localStorage.getItem('adminSoundEnabled') === 'true') {
-                    audio.play().catch(e => console.log('Audio verify:', e));
-                }
-                localStorage.setItem('adminLastOrderCount', currentCount);
-            }
-        };
-
-        if (window.db) {
-            window.db.collection('orders').orderBy('date', 'desc').onSnapshot((snapshot) => {
-                const orders = [];
-                snapshot.forEach((doc) => {
-                    orders.push({ id: doc.id, ...doc.data(), source: 'firebase' });
-                });
-                updateDisplay(orders);
-            }, (error) => {
-                console.error("Firestore Error:", error);
-                // If permission denied or index missing, allow local orders to show at least
-                alert("เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ (Firestore Error):\n" + error.message);
-                updateDisplay([]);
-            });
-        } else {
-            // Local only mode
-            updateDisplay([]);
-        }
-    };
-    subscribeOrders();
-
-    window.updateOrderStatus = async (orderId, nextStatus) => {
-        // Prompt logic same as before
-        let trackingNum = null;
-        if (nextStatus === 'shipping') {
-            trackingNum = prompt("กรุณากรอกเลขพัสดุ (Tracking Number):", "");
-            if (trackingNum === null) return;
-        }
-
-        try {
-            const updateData = { status: nextStatus };
-            if (trackingNum) updateData.trackingNumber = trackingNum;
-
-            await window.db.collection('orders').doc(orderId).update(updateData);
-            // Snapshot will auto update UI
-        } catch (e) {
-            alert('Error updating status: ' + e.message);
-        }
-    };
-
-    const renderAdminOrders = (highlightFirst = false) => {
-        const pendingOrders = displayedOrders.filter(o => !o.status || o.status === 'pending');
-
-        if (pendingOrders.length === 0) {
-            orderListContainer.innerHTML = '<p class="text-muted" style="text-align:center; padding: 20px;">ไม่มีรายการสั่งซื้อใหม่... / No new orders...</p>';
-            return;
-        }
-
-        orderListContainer.innerHTML = pendingOrders.map((o, index) => `
-            <div class="order-card ${highlightFirst && index === 0 ? 'new-order' : ''}">
-                <div class="order-header">
-                    <div class="order-id-box">
-                        <span class="order-id">#${o.id.substring(0, 8)}...</span>
-                        <span class="order-date">${o.displayDate || o.date}</span>
-                    </div>
-                    <div class="order-customer-info">
-                        <i class="fas fa-user"></i> <strong>${o.customer ? o.customer.name : 'N/A'}</strong>
-                        <br>
-                        <i class="fas fa-phone"></i> ${o.customer ? o.customer.phone : 'N/A'}
-                        <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.customer ? o.customer.address : 'N/A'}
-                        ${o.slip ? `
-                            <div class="order-slip-preview">
-                                <span class="slip-label"><i class="fas fa-receipt"></i> สลิปโอนเงิน:</span>
-                                <img src="${o.slip}" alt="Slip" onclick="viewSlip('${o.slip}')">
-                                <a href="javascript:void(0)" class="btn-view-slip" onclick="viewSlip('${o.slip}')">
-                                    <i class="fas fa-search-plus"></i> ดูสลิปขนาดใหญ่
-                                </a>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <div class="order-body">
-                    ${o.items.map(item => `
-                        <div class="order-item">
-                            <span>${item.title} x ${item.quantity}</span>
-                            <span>฿${(item.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="order-footer">
-                    <div class="order-total" style="margin-right: 15px;">
-                        ยอดรวม: ฿${o.total.toLocaleString()}
-                    </div>
-                    <button class="btn-status pack" onclick="updateOrderStatus('${o.id}', 'shipping')">
-                        <i class="fas fa-check"></i> แพ็คของเสร็จสิ้น
-                    </button>
-                    <!-- Small delete button for cleanup -->
-                    <button class="btn-icon delete" style="margin-left:auto; background:none; color:#f44336;" onclick="deleteOrder('${o.id}')" title="ลบคำสั่งซื้อ (Delete Order)">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    };
-
-    // Helper to delete junk orders
-    window.deleteOrder = async (id) => {
-        if (confirm('Delete this order?')) {
-            await window.db.collection('orders').doc(id).delete();
-        }
-    }
-
-    const renderShippingOrders = () => {
-        const shippingOrders = displayedOrders.filter(o => o.status === 'shipping');
-
-        if (shippingOrders.length === 0) {
-            shippingListContainer.innerHTML = '<p class="text-muted" style="text-align:center; padding: 20px;">ไม่มีรายการกำลังจัดส่ง... / No shipping orders...</p>';
-            return;
-        }
-
-        shippingListContainer.innerHTML = shippingOrders.map(o => `
-            <div class="order-card">
-                <div class="order-header">
-                    <div class="order-id-box">
-                       <span class="order-id">#${o.id.substring(0, 8)}...</span>
-                        <span class="order-date">${o.displayDate || o.date}</span>
-                    </div>
-                    <div class="order-customer-info">
-                         <i class="fas fa-user"></i> <strong>${o.customer ? o.customer.name : 'N/A'}</strong>
-                        <br>
-                        <i class="fas fa-phone"></i> ${o.customer ? o.customer.phone : 'N/A'}
-                        <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.customer ? o.customer.address : 'N/A'}
-                        ${o.slip ? `
-                            <div class="order-slip-preview">
-                                <span class="slip-label"><i class="fas fa-receipt"></i> สลิปโอนเงิน:</span>
-                                <img src="${o.slip}" alt="Slip" onclick="viewSlip('${o.slip}')">
-                                <a href="javascript:void(0)" class="btn-view-slip" onclick="viewSlip('${o.slip}')">
-                                    <i class="fas fa-search-plus"></i> ดูสลิปขนาดใหญ่
-                                </a>
-                            </div>
-                        ` : ''}
-                        ${o.trackingNumber ? `
-                            <div style="margin-top:10px; padding:8px; background:rgba(39, 174, 96, 0.1); border-radius:6px; border:1px dashed #27ae60;">
-                                <i class="fas fa-truck" style="color:#27ae60;"></i> 
-                                <strong style="color:#27ae60; font-size:1rem;">${o.trackingNumber}</strong>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <div class="order-body">
-                    ${o.items.map(item => `
-                        <div class="order-item">
-                            <span>${item.title} x ${item.quantity}</span>
-                            <span>฿${(item.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="order-footer">
-                    <div class="order-total" style="margin-right: 15px;">
-                        ยอดรวม: ฿${o.total.toLocaleString()}
-                    </div>
-                    <button class="btn-status deliver" onclick="updateOrderStatus('${o.id}', 'delivered')">
-                        <i class="fas fa-truck"></i> จัดส่งเรียบร้อยแล้ว
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    };
-
-    const renderHistoryOrders = () => {
-        const historyOrders = displayedOrders.filter(o => o.status === 'delivered');
-
-        // Calculate statistics
-        const totalCustomers = historyOrders.length;
-        const totalItems = historyOrders.reduce((sum, order) => {
-            return sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
-        }, 0);
-        const totalRevenue = historyOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-
-        // Update statistics display
-        const totalCustomersEl = document.getElementById('total-customers');
-        const totalItemsEl = document.getElementById('total-items');
-        const totalRevenueEl = document.getElementById('total-revenue');
-        if (totalCustomersEl) totalCustomersEl.textContent = totalCustomers.toLocaleString();
-        if (totalItemsEl) totalItemsEl.textContent = totalItems.toLocaleString();
-        if (totalRevenueEl) totalRevenueEl.textContent = '฿' + totalRevenue.toLocaleString();
-
-        if (historyOrders.length === 0) {
-            historyListContainer.innerHTML = '<p class="text-muted" style="text-align:center; padding: 20px;">ยังไม่มีประวัติการสั่งซื้อที่สำเร็จ... / No completed orders yet...</p>';
-            return;
-        }
-
-        historyListContainer.innerHTML = historyOrders.map(o => `
-            <div class="order-card" style="opacity: 0.8; border-color: #27ae60;">
-                <div class="order-header">
-                    <div class="order-id-box">
-                        <span class="order-id" style="color: #27ae60;">#${o.id.substring(0, 8)}... [เสร็จสิ้น]</span>
-                        <span class="order-date">${o.displayDate || o.date}</span>
-                    </div>
-                    <div class="order-customer-info" style="text-align: right;">
-                         <i class="fas fa-user"></i> <strong>${o.customer ? o.customer.name : 'N/A'}</strong>
-                        <br>
-                        <i class="fas fa-phone"></i> ${o.customer ? o.customer.phone : 'N/A'}
-                        <br>
-                        <i class="fas fa-map-marker-alt"></i> ${o.customer ? o.customer.address : 'N/A'}
-                        ${o.trackingNumber ? `
-                            <div style="margin-top:10px; padding:8px; background:rgba(39, 174, 96, 0.1); border-radius:6px; border:1px dashed #27ae60;">
-                                <i class="fas fa-truck" style="color:#27ae60;"></i> 
-                                <strong style="color:#27ae60; font-size:1rem;">${o.trackingNumber}</strong>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-                <div class="order-body">
-                    ${o.items.map(item => `
-                        <div class="order-item">
-                            <span>${item.title} x ${item.quantity}</span>
-                            <span>฿${(item.price * item.quantity).toLocaleString()}</span>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="order-footer">
-                    <div class="order-total" style="color: #27ae60;">
-                        ยอดรวมสุทธิ: ฿${o.total.toLocaleString()}
-                    </div>
-                    <span style="color: #27ae60; font-size: 0.9rem; font-weight: 600;"><i class="fas fa-check-double"></i> จัดส่งสำเร็จ</span>
-                </div>
-            </div>
-        `).join('');
-    };
-
-    // Initial Load
-    renderAdminProducts();
-    renderAdminOrders();
-    renderShippingOrders();
-    renderHistoryOrders();
-
-    // SOUND NOTIFICATION LOGIC (Handled at top of file)
-    let lastOrderCount = (JSON.parse(localStorage.getItem('otop_orders')) || []).length;
-
-
-    const checkNewOrders = () => {
-        const currentOrders = JSON.parse(localStorage.getItem('otop_orders')) || [];
-        if (currentOrders.length > lastOrderCount) {
-            // New order detected!
-            if (isSoundOn && audioEl) {
-                audioEl.play().catch(e => console.log('Audio play failed:', e));
-            }
-
-            // Refresh the active tab if it's orders or shipping
-            const activeTab = document.querySelector('.sidebar-nav a.active').getAttribute('data-tab');
-            if (activeTab === 'orders') {
-                renderAdminOrders(true);
-            } else if (activeTab === 'shipping') {
-                renderShippingOrders();
-            } else if (activeTab === 'history') {
-                renderHistoryOrders();
-            }
-
-            lastOrderCount = currentOrders.length;
-        } else if (currentOrders.length < lastOrderCount) {
-            lastOrderCount = currentOrders.length;
-        }
-    };
-
-    // PASSWORD CHANGE FUNCTIONALITY
-    const savePasswordBtn = document.getElementById('save-password-btn');
-    if (savePasswordBtn) {
-        savePasswordBtn.addEventListener('click', () => {
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-
-            // Validation
-            if (!newPassword || !confirmPassword) {
-                alert('กรุณากรอกรหัสผ่านให้ครบถ้วน');
-                return;
-            }
-
-            if (newPassword.length < 4) {
-                alert('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร');
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                alert('รหัสผ่านไม่ตรงกัน กรุณาลองใหม่อีกครั้ง');
-                return;
-            }
-
-            // Save new password
-            localStorage.setItem('admin_password', newPassword);
-            alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
-
-            // Clear inputs
-            document.getElementById('new-password').value = '';
-            document.getElementById('confirm-password').value = '';
-        });
-    }
-
-    // ================= CHAT LOGIC =================
+    // CHAT MANAGEMENT
     const adminChatInput = document.getElementById('adminChatInput');
     const adminSendBtn = document.getElementById('adminSendBtn');
     const adminChatMessages = document.getElementById('adminChatMessages');
-    const msgBadge = document.getElementById('msg-badge');
-
-    // Image Upload Elements
     const adminImageBtn = document.getElementById('adminImageBtn');
     const adminImageInput = document.getElementById('adminImageInput');
-
-    let lastChatCount = 0;
-
-    // Add event listener to send button
-    if (adminSendBtn) {
-        adminSendBtn.addEventListener('click', () => sendAdminMessage(null)); // Send text
-        if (adminChatInput) {
-            adminChatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendAdminMessage(null);
-            });
-        }
-    }
-
-    // Image Upload Logic
-    if (adminImageBtn && adminImageInput) {
-        adminImageBtn.addEventListener('click', () => adminImageInput.click());
-
-        adminImageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 500000) {
-                alert('รูปภาพมีขนาดใหญ่เกินไป (จำกัด 500KB)');
-                adminImageInput.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const base64String = event.target.result;
-                sendAdminMessage(base64String); // Send image
-                adminImageInput.value = '';
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // State for Admin Chat
     let activeChatUserId = null;
-
-    function sendAdminMessage(image = null) {
-        if (!activeChatUserId) {
-            alert('กรุณาเลือกผูู้ติดต่อก่อน / Please select a user to chat with.');
-            return;
-        }
-
-        const text = adminChatInput ? adminChatInput.value.trim() : '';
-        // Return if nothing to send
-        if (!text && !image) return;
-
-        let messages = JSON.parse(localStorage.getItem('phrae_otop_chat')) || [];
-        const newMessage = {
-            id: Date.now(),
-            text: text,
-            image: image,
-            sender: 'admin',
-            recipientId: activeChatUserId, // Admin messages MUST have a recipient
-            timestamp: new Date().toISOString(),
-            isRead: false
-        };
-
-        messages.push(newMessage);
-        localStorage.setItem('phrae_otop_chat', JSON.stringify(messages));
-
-        if (adminChatInput) adminChatInput.value = '';
-        renderAdminChat(); // Re-render to show new message
-    }
+    let lastUnreadMsgCount = 0;
 
     function renderAdminChat() {
         if (!adminChatMessages) return;
-
-        const messages = JSON.parse(localStorage.getItem('phrae_otop_chat')) || [];
+        const messages = allChatMessages;
         const chatUserList = document.getElementById('chatUserList');
         const chatHeader = document.getElementById('chatHeaderUser');
         const activeUserName = document.getElementById('activeUserName');
         const inputArea = document.getElementById('adminChatInputArea');
 
-        // 1. Group messages by Users
         const usersMap = {};
         messages.forEach(msg => {
-            // Identify conversation partner
-            let uid, uname;
-            if (msg.sender === 'user') {
-                uid = msg.userId;
-                uname = msg.username;
-            } else if (msg.sender === 'admin') {
-                uid = msg.recipientId;
-                // We might not know username if only admin msgs exist, but usually it starts with user msg
-                uname = 'Unknown'; // Fallback
+            let uid = msg.userId;
+            let uname = msg.username;
+            if (msg.sender === 'admin') uid = msg.recipientId;
+            if (!uid) { uid = 'legacy'; uname = 'Guest'; }
+            
+            if (!usersMap[uid]) {
+                usersMap[uid] = { id: uid, name: uname || 'Guest', lastMsg: '', lastTime: '', unread: 0 };
             }
-
-            // Fallback for Legacy Messages (Old customers before update)
-            if (!uid) {
-                uid = 'legacy_user';
-                uname = 'Guest (Legacy)';
-            }
-
-            if (uid) {
-                if (!usersMap[uid]) {
-                    usersMap[uid] = {
-                        id: uid,
-                        name: uname || 'Guest',
-                        lastMsg: '',
-                        lastTime: '',
-                        unread: 0
-                    };
-                }
-                // Update latest info
-                if (uname && uname !== 'Unknown' && uname !== 'Guest (Legacy)') usersMap[uid].name = uname;
-                usersMap[uid].lastMsg = msg.image ? '[รูปภาพ]' : msg.text;
-                usersMap[uid].lastTime = msg.timestamp;
-
-                if (msg.sender === 'user' && !msg.isRead) {
-                    usersMap[uid].unread++;
-                }
-            }
+            if (uname && uname !== 'Unknown' && msg.sender !== 'admin') usersMap[uid].name = uname;
+            usersMap[uid].lastMsg = msg.image ? '[รูปภาพ]' : msg.text;
+            usersMap[uid].lastTime = msg.timestamp;
+            if (msg.sender === 'user' && !msg.isRead) usersMap[uid].unread++;
         });
 
-        // 2. Render User List
-        chatUserList.innerHTML = '';
-        const sortedUsers = Object.values(usersMap).sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+        // Notifications logic
+        const totalUnread = Object.values(usersMap).reduce((s, u) => s + u.unread, 0);
+        if (totalUnread > lastUnreadMsgCount) {
+            playNotificationSound();
+        }
+        lastUnreadMsgCount = totalUnread;
 
-        if (sortedUsers.length === 0) {
-            chatUserList.innerHTML = '<div style="padding:20px; color:#666; text-align:center;">ยังไม่มีข้อความ</div>';
+        if (chatUserList) {
+            chatUserList.innerHTML = '';
+            const sortedUsers = Object.values(usersMap).sort((a,b) => new Date(b.lastTime) - new Date(a.lastTime));
+            if(sortedUsers.length===0){
+                chatUserList.innerHTML = '<div style="padding:20px; color:#666; text-align:center;">ยังไม่มีข้อความ</div>';
+            }
+            sortedUsers.forEach(u => {
+                const item = document.createElement('div');
+                item.className = 'chat-user-item';
+                item.style.padding = '15px';
+                item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                item.style.cursor='pointer';
+                if(activeChatUserId===u.id) item.style.background='rgba(255,215,0,0.1)';
+                
+                item.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="font-weight:bold; color:#fff;">${u.name}</div>
+                        ${u.unread > 0 ? `<div style="background:red; color:white; font-size:10px; padding:2px 6px; border-radius:10px;">${u.unread}</div>` : ''}
+                    </div>
+                    <div style="font-size:0.8rem; color:#888; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${u.lastMsg||''}</div>
+                `;
+                item.addEventListener('click', () => { activeChatUserId=u.id; renderAdminChat();});
+                chatUserList.appendChild(item);
+            });
         }
 
-        sortedUsers.forEach(u => {
-            const item = document.createElement('div');
-            item.className = 'chat-user-item';
-            item.style.padding = '15px';
-            item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-            item.style.cursor = 'pointer';
-            item.style.transition = '0.2s';
-            if (activeChatUserId === u.id) item.style.background = 'rgba(255,215,0,0.1)';
+        // Active chat
+        if (activeChatUserId) {
+            if (inputArea) inputArea.style.display = 'flex';
+            if (chatHeader) chatHeader.style.display = 'block';
+            if (activeUserName) activeUserName.textContent = usersMap[activeChatUserId]?.name || 'Chat';
 
-            item.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <div style="font-weight:bold; color:#fff;">${u.name}</div>
-                    ${u.unread > 0 ? `<div style="background:red; color:white; font-size:10px; padding:2px 6px; border-radius:10px;">${u.unread}</div>` : ''}
-                </div>
-                <div style="font-size:0.8rem; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.lastMsg}</div>
-                <div style="font-size:0.7rem; color:#555; text-align:right; margin-top:5px;">${new Date(u.lastTime).toLocaleString('th-TH')}</div>
-            `;
-
-            item.addEventListener('click', () => {
-                activeChatUserId = u.id;
-                renderAdminChat(); // Re-render full view
+            // Mark read
+            messages.filter(m => m.sender === 'user' && m.userId === activeChatUserId && !m.isRead).forEach(async m => {
+                await window.db.collection('chats').doc(m.id).update({ isRead: true });
             });
 
-            // Hover effect
-            item.onmouseover = () => { if (activeChatUserId !== u.id) item.style.background = 'rgba(255,255,255,0.05)'; };
-            item.onmouseout = () => { if (activeChatUserId !== u.id) item.style.background = 'transparent'; };
-
-            chatUserList.appendChild(item);
-        });
-
-        // 3. Render Active Conversation
-        if (activeChatUserId) {
-            // Unhide Input Area
-            inputArea.style.display = 'flex';
-            chatHeader.style.display = 'block';
-            activeUserName.textContent = usersMap[activeChatUserId]?.name || 'Chat';
-
-            // Filter Conversation
-            const conversation = messages.filter(m =>
+            const conversation = messages.filter(m => 
                 (m.sender === 'user' && m.userId === activeChatUserId) ||
                 (m.sender === 'admin' && m.recipientId === activeChatUserId)
             );
 
             adminChatMessages.innerHTML = '';
-
-            // Mark as read (only user messages)
-            let hasReadUpdate = false;
-            conversation.forEach(msg => {
-                if (msg.sender === 'user' && !msg.isRead) {
-                    msg.isRead = true;
-                    // Find original object in main array to update storage
-                    const original = messages.find(m => m.id === msg.id);
-                    if (original) original.isRead = true;
-                    hasReadUpdate = true;
-                }
-            });
-
-            if (hasReadUpdate) {
-                localStorage.setItem('phrae_otop_chat', JSON.stringify(messages));
-                // Recalculate badge logic if needed (handled by badge rendering below)
-            }
-
             conversation.forEach(msg => {
                 const div = document.createElement('div');
-                div.className = `message ${msg.sender}`; // .message.user (left) or .message.admin (right)
-
-                if (msg.image) {
-                    const img = document.createElement('img');
-                    // ... image render logic same as before ...
-                    img.src = msg.image;
-                    img.style.maxWidth = '200px';
-                    img.style.borderRadius = '10px';
-                    div.appendChild(img);
+                div.className = `message ${msg.sender === 'admin' ? 'admin' : 'user'}`;
+                if(msg.image){
+                    div.innerHTML = `<img src="${msg.image}" style="max-width:100%; border-radius:8px;"/>`;
                 } else {
                     div.textContent = msg.text;
                 }
                 adminChatMessages.appendChild(div);
             });
-
-            // Scroll to bottom
             adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
-
-        } else {
-            // No user selected
-            inputArea.style.display = 'none';
-            chatHeader.style.display = 'none';
-            adminChatMessages.innerHTML = '<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#666; flex-direction:column;"><i class="fas fa-comments" style="font-size:3rem; margin-bottom:20px;"></i><p>เลือกแชทจากรายการทางซ้ายมือ</p></div>';
-        }
-
-        // Global Badge Update
-        // Global Badge Update
-        // Count unique users who have sent unread messages
-        const unreadUserIds = new Set(
-            messages.filter(m => m.sender === 'user' && !m.isRead).map(m => m.userId)
-        );
-        const totalUnreadPeople = unreadUserIds.size;
-
-        if (msgBadge) {
-            msgBadge.style.display = totalUnreadPeople > 0 ? 'inline-block' : 'none';
-            msgBadge.textContent = totalUnreadPeople > 99 ? '99+' : totalUnreadPeople;
-
-            // Optional: visual pulse if new
-            if (totalUnreadPeople > 0) {
-                msgBadge.style.animation = 'pulse-red 2s infinite';
-            } else {
-                msgBadge.style.animation = 'none';
-            }
-        }
-
-        // Play Sound if new messages arrived
-        // We calculate total unread messages across all users
-        const totalUnreadCount = sortedUsers.reduce((sum, u) => sum + u.unread, 0);
-
-        if (totalUnreadCount > lastUnreadMsgCount) {
-            if (isSoundOn && audioEl) {
-                audioEl.currentTime = 0;
-                audioEl.play().catch(e => console.warn('Notification sound blocked:', e));
-            }
-        }
-
-        // Update tracker (prevent sound loop)
-        lastUnreadMsgCount = totalUnreadCount;
-    }
-
-
-    // Polling interval
-    setInterval(() => {
-        checkNewOrders();
-        renderAdminChat();
-    }, 2000);
-
-    // Initial load
-    lastOrderCount = (JSON.parse(localStorage.getItem('otop_orders')) || []).length;
-
-    // Check initial tab
-    const initialTab = document.querySelector('.sidebar-nav a.active');
-    if (initialTab) {
-        const tabName = initialTab.getAttribute('data-tab');
-        if (tabName === 'messages') {
-            renderAdminChat();
-        } else if (tabName === 'orders') {
-            renderAdminOrders();
-        } else if (tabName === 'shipping') {
-            renderShippingOrders();
-        } else if (tabName === 'history') {
-            renderHistoryOrders();
-        } else if (tabName === 'settings') {
-            renderAdminManagementList();
-            // Display current username
-            const usernameDisplay = document.getElementById('current-admin-username');
-            if (usernameDisplay && currentUser) {
-                usernameDisplay.textContent = `${currentUser.username} (${currentUser.name})`;
-            }
         }
     }
 
-    // ==========================================
-    // PERSONAL PASSWORD CHANGE (Settings Tab)
-    // ==========================================
-    window.changeMyPassword = () => {
-        const currentPassword = document.getElementById('current-password').value.trim();
-        const newPassword = document.getElementById('new-password-self').value.trim();
+    async function sendAdminMessage(image=null){
+        if(!activeChatUserId) return;
+        const text = adminChatInput?.value.trim();
+        if(!text && !image) return;
 
-        if (!currentPassword || !newPassword) {
-            alert('กรุณากรอกรหัสผ่านให้ครบถ้วน');
-            return;
+        try {
+            await window.db.collection('chats').add({
+                text: text||null,
+                image: image||null,
+                sender: 'admin',
+                userId: activeChatUserId,
+                recipientId: activeChatUserId,
+                username: 'Admin',
+                timestamp: new Date().toISOString(),
+                isRead: false
+            });
+            if(adminChatInput) adminChatInput.value = '';
+        } catch(e) {
+            console.error(e);
         }
+    }
 
-        // Verify current password
-        if (currentPassword !== currentUser.password) {
-            alert('รหัสผ่านปัจจุบันไม่ถูกต้อง!');
-            return;
-        }
+    if(adminSendBtn) adminSendBtn.addEventListener('click', () => sendAdminMessage(null));
+    if(adminChatInput) adminChatInput.addEventListener('keypress', (e) => { if(e.key==='Enter') sendAdminMessage(null); });
+    
+    // PRODUCT MANAGEMENT simplified
+    window.cachedProducts = [];
+    if(window.db){
+        window.db.collection('products').onSnapshot(snapshot => {
+            window.cachedProducts = [];
+            snapshot.forEach(doc => window.cachedProducts.push({id: doc.id, ...doc.data()}));
+            window.cachedProducts.sort((a,b)=>a.index - b.index);
+            if(document.getElementById('products')?.classList.contains('active')) renderAdminProducts();
+        });
+    }
 
-        // Update in localStorage
-        const admins = JSON.parse(localStorage.getItem('phrae_otop_admins')) || [];
-        const index = admins.findIndex(a => a.username === currentUser.username);
-
-        if (index === -1) {
-            alert('ไม่พบข้อมูลผู้ใช้งาน');
-            return;
-        }
-
-        admins[index].password = newPassword;
-        localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
-
-        // Update session
-        currentUser.password = newPassword;
-        sessionStorage.setItem('currentAdminUser', JSON.stringify(currentUser));
-
-        alert('เปลี่ยนรหัสผ่านสำเร็จ!');
-
-        // Clear inputs
-        document.getElementById('current-password').value = '';
-        document.getElementById('new-password-self').value = '';
-    };
-
-    // ==========================================
-    // ADMIN MANAGEMENT LOGIC (Settings Tab)
-    // ==========================================
-    window.renderAdminManagementList = () => {
-        const list = document.getElementById('admin-management-list');
-        if (!list) return;
-
-        const admins = JSON.parse(localStorage.getItem('phrae_otop_admins')) || [];
-        list.innerHTML = admins.map((a, index) => `
+    function renderAdminProducts() {
+        const body = document.getElementById('admin-product-list');
+        if(!body) return;
+        body.innerHTML = window.cachedProducts.map(p => `
             <tr>
-                <td>${a.name}</td>
-                <td>${a.username}</td>
-                <td>
-                    <span style="background:${a.role === 'admin' ? 'var(--primary-color)' : '#aaa'}; color:#000; padding:2px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">
-                        ${a.role.toUpperCase()}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn-icon edit" onclick="editAdminPassword(${index})" title="แก้ไขรหัสผ่าน">
-                        <i class="fas fa-key"></i>
-                    </button>
-                    ${a.username === 'admin' ? '<small style="margin-left:5px;">Main</small>' : `<button class="btn-icon delete" onclick="deleteAdminUser(${index})"><i class="fas fa-trash"></i></button>`}
-                </td>
+                <td><img src="${p.image}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
+                <td style="font-weight:bold;">${p.title}</td>
+                <td>${p.category || 'N/A'}</td>
+                <td>฿${p.price.toLocaleString()}</td>
+                <td><span class="status-badge status-${p.inStock ? 'completed' : 'cancelled'}">${p.inStock ? 'มีสินค้า' : 'หมด'}</span></td>
+                <td>-</td>
             </tr>
         `).join('');
-    };
+    }
 
-    window.editAdminPassword = (index) => {
-        const admins = JSON.parse(localStorage.getItem('phrae_otop_admins')) || [];
-        const admin = admins[index];
-
-        if (!admin) return;
-
-        const newPassword = prompt(`แก้ไขรหัสผ่านสำหรับ: ${admin.username} (${admin.name})\n\nกรอกรหัสผ่านใหม่:`, admin.password);
-
-        if (newPassword === null) return; // Cancelled
-
-        if (!newPassword.trim()) {
-            alert('รหัสผ่านต้องไม่เป็นค่าว่าง');
-            return;
-        }
-
-        admins[index].password = newPassword.trim();
-        localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
-
-        // Update session if editing current user
-        const currentUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
-        if (currentUser && currentUser.username === admin.username) {
-            currentUser.password = newPassword.trim();
-            sessionStorage.setItem('currentAdminUser', JSON.stringify(currentUser));
-        }
-
-        alert('แก้ไขรหัสผ่านเรียบร้อยแล้ว!');
-        renderAdminManagementList();
-    };
-
-    window.saveAdminUser = () => {
-        const uname = document.getElementById('new-admin-user').value.trim();
-        const upass = document.getElementById('new-admin-pass').value.trim();
-        const unameDisplay = document.getElementById('new-admin-name').value.trim();
-        const urole = document.getElementById('new-admin-role').value;
-
-        if (!uname || !upass || !unameDisplay) {
-            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-            return;
-        }
-
-        const admins = JSON.parse(localStorage.getItem('phrae_otop_admins')) || [];
-
-        // Check duplicate
-        if (admins.find(a => a.username === uname)) {
-            alert('Username นี้มีอยู่ในระบบแล้ว');
-            return;
-        }
-
-        admins.push({
-            username: uname,
-            password: upass,
-            name: unameDisplay,
-            role: urole
-        });
-
-        localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
-        alert('บันทึกผู้ใช้งานเรียบร้อย');
-
-        // Clear Inputs
-        document.getElementById('new-admin-user').value = '';
-        document.getElementById('new-admin-pass').value = '';
-        document.getElementById('new-admin-name').value = '';
-
-        renderAdminManagementList();
-    };
-
-    window.deleteAdminUser = (index) => {
-        // RBAC Check
-        const currentUser = JSON.parse(sessionStorage.getItem('currentAdminUser'));
-        if (currentUser && currentUser.role === 'staff') {
-            alert('ขออภัย! พนักงานระดับ Staff ไม่ได้รับอนุญาตให้ลบผู้ดูแลระบบ\n\nPermission Denied: Staff cannot delete admins.');
-            return;
-        }
-
-        if (!confirm('ต้องการลบผู้ใช้งานนี้ใช่หรือไม่?')) return;
-
-        const admins = JSON.parse(localStorage.getItem('phrae_otop_admins')) || [];
-        admins.splice(index, 1);
-        localStorage.setItem('phrae_otop_admins', JSON.stringify(admins));
-        renderAdminManagementList();
-    };
-
-    // ==========================================
-    // BACKUP & RESTORE SYSTEM
-    // ==========================================
-    window.exportBackupData = () => {
-        const data = {
-            timestamp: new Date().toISOString(),
-            version: '1.0',
-            orders: JSON.parse(localStorage.getItem('otop_orders')),
-            products: JSON.parse(localStorage.getItem('otop_products')),
-            users: JSON.parse(localStorage.getItem('phrae_otop_users')),
-            admins: JSON.parse(localStorage.getItem('phrae_otop_admins')),
-            chat: localStorage.getItem('otop_chat_sessions') // Chat history
-        };
-
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "otop_backup_" + new Date().toISOString().slice(0, 10) + ".json");
-        document.body.appendChild(downloadAnchorNode); // required for firefox
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    };
-
-    window.importBackupData = (input) => {
-        const file = input.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-
-                if (confirm('คำเตือน: การกู้คืนข้อมูลจะทับข้อมูลปัจจุบันทั้งหมด\nต้องการดำเนินการต่อหรือไม่?')) {
-                    if (data.orders) localStorage.setItem('otop_orders', JSON.stringify(data.orders));
-                    if (data.products) localStorage.setItem('otop_products', JSON.stringify(data.products));
-                    if (data.users) localStorage.setItem('phrae_otop_users', JSON.stringify(data.users));
-                    if (data.admins) localStorage.setItem('phrae_otop_admins', JSON.stringify(data.admins));
-                    if (data.chat) localStorage.setItem('otop_chat_sessions', data.chat);
-
-                    alert('กู้คืนข้อมูลสำเร็จ! ระบบจะรีเฟรชหน้าจอ');
-                    location.reload();
-                }
-            } catch (err) {
-                alert('ไฟล์ไม่ถูกต้อง หรือเกิดข้อผิดพลาดในการอ่านไฟล์');
-                console.error(err);
-            }
-        };
-        reader.readAsText(file);
-    };
 });
