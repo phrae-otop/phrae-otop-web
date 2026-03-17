@@ -1,4 +1,4 @@
-const AUTH_VERSION = "v1.1.1-unlimited-reg";
+const AUTH_VERSION = "v1.1.2-sync-debug";
 console.log(`[Auth System] Version: ${AUTH_VERSION}`);
 
 const AUTH_CONFIG = {
@@ -15,45 +15,41 @@ const Auth = {
 
     // Register a new user
     async register(username, email, password) {
+        console.log(`🚀 [Registration] Attempting to register ${email}...`);
+        
         // Robust DB check
         let db = window.db;
         if (!db) {
-            console.log("DB not ready, waiting 3 seconds...");
+            console.log("📡 DB not ready, waiting for initialization...");
             for (let i = 0; i < 30; i++) {
                 await new Promise(r => setTimeout(r, 100));
                 if (window.db) {
                     db = window.db;
+                    console.log("✅ DB Connected!");
                     break;
                 }
             }
         }
 
         if (!db) {
-            console.error("DB connection timed out in Auth.register");
+            console.error("❌ DB connection timed out in Auth.register");
             return { success: false, message: 'ระบบฐานข้อมูลขัดข้อง (Timeout) / Database connection error' };
         }
 
         try {
-            /* 
-            // Check if user already exists (Disabled for 'Unlimited' registration)
-            const existingUser = await window.db.collection('users').where('email', '==', email).get();
-            if (!existingUser.empty) {
-                return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว / Email already registered' };
-            }
-            */
-
             const newUserRef = window.db.collection('users').doc();
             const newUser = {
                 id: newUserRef.id,
                 username,
                 email,
-                password, // Note: In a real app this should be hashed, keeping plain for current compat
-                createdAt: new Date().toISOString()
+                password, // Note: In a real app this should be hashed
+                createdAt: new Date().toISOString(),
+                source: 'online_registration'
             };
 
-            console.log("Firestore: Saving new user document...");
+            console.log("📡 Firestore: Saving new user document to 'users' collection...");
             await newUserRef.set(newUser);
-            console.log("✅ User document saved successfully in Firestore");
+            console.log("✅ User document saved successfully in Firestore ID:", newUserRef.id);
             alert('สมัครสมาชิกสำเร็จ! ข้อมูลถูกบันทึกลงฐานข้อมูลออนไลน์แล้ว / Registration Successful!');
 
             // Auto login after register

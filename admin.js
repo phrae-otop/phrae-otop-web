@@ -1,5 +1,5 @@
 // admin.js - Refactored for Compat SDK
-const ADMIN_VERSION = "v1.1.0-online-fix";
+const ADMIN_VERSION = "v1.1.2-sync-debug";
 console.log(`[Admin System] Version: ${ADMIN_VERSION}`);
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -630,15 +630,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Subscribe to USERS
     const subscribeUsers = () => {
+        const syncIndicator = document.getElementById('sync-status-indicator');
+        
         if (window.db) {
-            console.log("Subscribing to users collection...");
+            console.log("📡 Subscribing to 'users' collection...");
+            if (syncIndicator) {
+                syncIndicator.style.background = '#FFC107'; // Yellow: Connecting
+                syncIndicator.title = "Connecting to Firebase...";
+            }
+
             window.db.collection('users').onSnapshot((snapshot) => {
                 const users = [];
                 snapshot.forEach((doc) => {
                     users.push({ id: doc.id, ...doc.data() });
                 });
 
-                console.log("Users fetched from Firestore:", users.length);
+                console.log(`✅ [Firebase Sync] ${users.length} users fetched successfully.`);
+                if (syncIndicator) {
+                    syncIndicator.style.background = '#4CAF50'; // Green: Connected
+                    syncIndicator.title = `Connected. Last sync: ${new Date().toLocaleTimeString()}`;
+                }
                 
                 // Store in global cache
                 window.adminUsersCache = users;
@@ -647,18 +658,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('phrae_otop_users', JSON.stringify(users));
 
                 // Update UI Counter immediately
-                const totalMembersEl = document.getElementById('total-members-count');
-                if (totalMembersEl) totalMembersEl.textContent = users.length.toLocaleString();
+                const countEl = document.getElementById('total-members-count');
+                if (countEl) countEl.textContent = users.length.toLocaleString();
 
                 // Check for new users logic (Sound)
                 const currentCount = users.length;
                 const lastCount = parseInt(localStorage.getItem('adminLastUserCount') || 0);
-                if (currentCount > lastCount && lastCount > 0) { // Only play if count increased and not first load
+                if (currentCount > lastCount && lastCount > 0) { 
                     const audio = document.getElementById('notification-sound');
                     if (audio && localStorage.getItem('adminSoundEnabled') === 'true') {
-                        audio.play().catch(e => console.log('Audio verify:', e));
+                        audio.play().catch(e => console.log('Audio notify:', e));
                     }
-                    console.log("🔔 New user registered! Playing sound.");
+                    console.log("🔔 New user detected! Updated list.");
                 }
                 localStorage.setItem('adminLastUserCount', currentCount);
 
@@ -666,13 +677,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderAdminUsers();
 
             }, (error) => {
-                console.error("Firestore Users Error:", error);
+                console.error("❌ Firestore Users Error:", error);
+                if (syncIndicator) {
+                    syncIndicator.style.background = '#f44336'; // Red: Error
+                    syncIndicator.title = `Error: ${error.message}`;
+                }
                 if (error.code === 'permission-denied') {
                     alert("⚠️ Firestore Permission Denied: แอดมินไม่มีสิทธิ์อ่านข้อมูลสมาชิก กรุณาตรวจสอบ Firebase Rules / Admin has no read permission.");
                 }
             });
         } else {
-            console.warn("Database not ready for user subscription. Retrying in 2s...");
+            console.warn("⏳ Database not ready for user subscription. Retrying in 2s...");
+            if (syncIndicator) syncIndicator.style.background = '#888'; 
             setTimeout(subscribeUsers, 2000);
         }
     }
