@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOTIFICATION SOUND SYSTEM
     let isSoundOn = localStorage.getItem('adminSoundEnabled') !== 'false'; // Default true
-    let lastUnreadMsgCount = 0;
     const soundToggle = document.getElementById('toggle-sound');
     const soundIcon = document.getElementById('sound-icon');
     const soundStatus = document.getElementById('sound-status');
@@ -1003,21 +1002,71 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // ================= CHAT LOGIC =================
+    // ================= CHAT LOGIC (Firestore-based) =================
     const adminChatInput = document.getElementById('adminChatInput');
     const adminSendBtn = document.getElementById('adminSendBtn');
     const adminChatMessages = document.getElementById('adminChatMessages');
     const msgBadge = document.getElementById('msg-badge');
-
-    // Image Upload Elements
     const adminImageBtn = document.getElementById('adminImageBtn');
     const adminImageInput = document.getElementById('adminImageInput');
 
-    let lastChatCount = 0;
+    let activeChatUserId = null;
+    let allChatMessages = []; // Cache from Firestore
+    let lastUnreadMsgCount = 0;
 
-    // Add event listener to send button
+    // Subscribe to ALL chats in real-time from Firestore
+    if (window.db) {
+        window.db.collection('chats').orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+            allChatMessages = [];
+            snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+            console.log(`✅ [Chat Sync] ${allChatMessages.length} chat messages loaded.`);
+            renderAdminChat();
+        }, (error) => {
+            console.error('❌ Chat Firestore Error:', error);
+        });
+    } else {
+        console.warn('⏳ Firestore not ready for chat. Retrying...');
+        setTimeout(() => {
+            if (window.db) {
+                window.db.collection('chats').orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+                    allChatMessages = [];
+                    snapshot.forEach(doc => allChatMessages.push({ id: doc.id, ...doc.data() }));
+                    renderAdminChat();
+                });
+            }
+        }, 3000);
+    }
+
+    // Send admin message to Firestore
+    async function sendAdminMessage(image = null) {
+        if (!activeChatUserId) {
+            alert('กรุณาเลือกผู้ติดต่อก่อน / Please select a user to chat with.');
+            return;
+        }
+        const text = adminChatInput ? adminChatInput.value.trim() : '';
+        if (!text && !image) return;
+
+        try {
+            await window.db.collection('chats').add({
+                text: text || null,
+                image: image || null,
+                sender: 'admin',
+                userId: activeChatUserId,    // Tag with user ID so widget can filter
+                recipientId: activeChatUserId,
+                username: 'Admin',
+                timestamp: new Date().toISOString(),
+                isRead: false
+            });
+            if (adminChatInput) adminChatInput.value = '';
+            console.log('✅ Admin message sent to Firestore');
+        } catch (e) {
+            console.error('❌ Failed to send admin message:', e);
+            alert('เกิดข้อผิดพลาดในการส่งข้อความ: ' + e.message);
+        }
+    }
+
     if (adminSendBtn) {
-        adminSendBtn.addEventListener('click', () => sendAdminMessage(null)); // Send text
+        adminSendBtn.addEventListener('click', () => sendAdminMessage(null));
         if (adminChatInput) {
             adminChatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendAdminMessage(null);
@@ -1025,249 +1074,135 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Image Upload Logic
     if (adminImageBtn && adminImageInput) {
         adminImageBtn.addEventListener('click', () => adminImageInput.click());
-
         adminImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
-            if (file.size > 500000) {
-                alert('รูปภาพมีขนาดใหญ่เกินไป (จำกัด 500KB)');
-                adminImageInput.value = '';
-                return;
-            }
-
+            if (file.size > 500000) { alert('รูปภาพมีขนาดใหญ่เกินไป (จำกัด 500KB)'); adminImageInput.value = ''; return; }
             const reader = new FileReader();
             reader.onload = function (event) {
-                const base64String = event.target.result;
-                sendAdminMessage(base64String); // Send image
+                sendAdminMessage(event.target.result);
                 adminImageInput.value = '';
             };
             reader.readAsDataURL(file);
         });
     }
 
-    // State for Admin Chat
-    let activeChatUserId = null;
-
-    function sendAdminMessage(image = null) {
-        if (!activeChatUserId) {
-            alert('กรุณาเลือกผูู้ติดต่อก่อน / Please select a user to chat with.');
-            return;
-        }
-
-        const text = adminChatInput ? adminChatInput.value.trim() : '';
-        // Return if nothing to send
-        if (!text && !image) return;
-
-        let messages = JSON.parse(localStorage.getItem('phrae_otop_chat')) || [];
-        const newMessage = {
-            id: Date.now(),
-            text: text,
-            image: image,
-            sender: 'admin',
-            recipientId: activeChatUserId, // Admin messages MUST have a recipient
-            timestamp: new Date().toISOString(),
-            isRead: false
-        };
-
-        messages.push(newMessage);
-        localStorage.setItem('phrae_otop_chat', JSON.stringify(messages));
-
-        if (adminChatInput) adminChatInput.value = '';
-        renderAdminChat(); // Re-render to show new message
-    }
-
     function renderAdminChat() {
         if (!adminChatMessages) return;
-
-        const messages = JSON.parse(localStorage.getItem('phrae_otop_chat')) || [];
+        const messages = allChatMessages;
         const chatUserList = document.getElementById('chatUserList');
         const chatHeader = document.getElementById('chatHeaderUser');
         const activeUserName = document.getElementById('activeUserName');
         const inputArea = document.getElementById('adminChatInputArea');
 
-        // 1. Group messages by Users
+        // 1. Group messages by User
         const usersMap = {};
         messages.forEach(msg => {
-            // Identify conversation partner
-            let uid, uname;
-            if (msg.sender === 'user') {
-                uid = msg.userId;
-                uname = msg.username;
-            } else if (msg.sender === 'admin') {
-                uid = msg.recipientId;
-                // We might not know username if only admin msgs exist, but usually it starts with user msg
-                uname = 'Unknown'; // Fallback
-            }
-
-            // Fallback for Legacy Messages (Old customers before update)
-            if (!uid) {
-                uid = 'legacy_user';
-                uname = 'Guest (Legacy)';
-            }
-
+            let uid = msg.userId;
+            let uname = msg.username;
+            if (msg.sender === 'admin') uid = msg.recipientId;
+            if (!uid) { uid = 'legacy_user'; uname = 'Guest (Legacy)'; }
             if (uid) {
                 if (!usersMap[uid]) {
-                    usersMap[uid] = {
-                        id: uid,
-                        name: uname || 'Guest',
-                        lastMsg: '',
-                        lastTime: '',
-                        unread: 0
-                    };
+                    usersMap[uid] = { id: uid, name: uname || 'Guest', lastMsg: '', lastTime: '', unread: 0 };
                 }
-                // Update latest info
-                if (uname && uname !== 'Unknown' && uname !== 'Guest (Legacy)') usersMap[uid].name = uname;
+                if (uname && uname !== 'Unknown' && uname !== 'Guest (Legacy)' && msg.sender !== 'admin') usersMap[uid].name = uname;
                 usersMap[uid].lastMsg = msg.image ? '[รูปภาพ]' : msg.text;
                 usersMap[uid].lastTime = msg.timestamp;
-
-                if (msg.sender === 'user' && !msg.isRead) {
-                    usersMap[uid].unread++;
-                }
+                if (msg.sender === 'user' && !msg.isRead) usersMap[uid].unread++;
             }
         });
 
         // 2. Render User List
-        chatUserList.innerHTML = '';
-        const sortedUsers = Object.values(usersMap).sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
-
-        if (sortedUsers.length === 0) {
-            chatUserList.innerHTML = '<div style="padding:20px; color:#666; text-align:center;">ยังไม่มีข้อความ</div>';
-        }
-
-        sortedUsers.forEach(u => {
-            const item = document.createElement('div');
-            item.className = 'chat-user-item';
-            item.style.padding = '15px';
-            item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-            item.style.cursor = 'pointer';
-            item.style.transition = '0.2s';
-            if (activeChatUserId === u.id) item.style.background = 'rgba(255,215,0,0.1)';
-
-            item.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <div style="font-weight:bold; color:#fff;">${u.name}</div>
-                    ${u.unread > 0 ? `<div style="background:red; color:white; font-size:10px; padding:2px 6px; border-radius:10px;">${u.unread}</div>` : ''}
-                </div>
-                <div style="font-size:0.8rem; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.lastMsg}</div>
-                <div style="font-size:0.7rem; color:#555; text-align:right; margin-top:5px;">${new Date(u.lastTime).toLocaleString('th-TH')}</div>
-            `;
-
-            item.addEventListener('click', () => {
-                activeChatUserId = u.id;
-                renderAdminChat(); // Re-render full view
-            });
-
-            // Hover effect
-            item.onmouseover = () => { if (activeChatUserId !== u.id) item.style.background = 'rgba(255,255,255,0.05)'; };
-            item.onmouseout = () => { if (activeChatUserId !== u.id) item.style.background = 'transparent'; };
-
-            chatUserList.appendChild(item);
-        });
-
-        // 3. Render Active Conversation
-        if (activeChatUserId) {
-            // Unhide Input Area
-            inputArea.style.display = 'flex';
-            chatHeader.style.display = 'block';
-            activeUserName.textContent = usersMap[activeChatUserId]?.name || 'Chat';
-
-            // Filter Conversation
-            const conversation = messages.filter(m =>
-                (m.sender === 'user' && m.userId === activeChatUserId) ||
-                (m.sender === 'admin' && m.recipientId === activeChatUserId)
-            );
-
-            adminChatMessages.innerHTML = '';
-
-            // Mark as read (only user messages)
-            let hasReadUpdate = false;
-            conversation.forEach(msg => {
-                if (msg.sender === 'user' && !msg.isRead) {
-                    msg.isRead = true;
-                    // Find original object in main array to update storage
-                    const original = messages.find(m => m.id === msg.id);
-                    if (original) original.isRead = true;
-                    hasReadUpdate = true;
-                }
-            });
-
-            if (hasReadUpdate) {
-                localStorage.setItem('phrae_otop_chat', JSON.stringify(messages));
-                // Recalculate badge logic if needed (handled by badge rendering below)
+        if (chatUserList) {
+            chatUserList.innerHTML = '';
+            const sortedUsers = Object.values(usersMap).sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+            if (sortedUsers.length === 0) {
+                chatUserList.innerHTML = '<div style="padding:20px; color:#666; text-align:center;">ยังไม่มีข้อความ</div>';
             }
-
-            conversation.forEach(msg => {
-                const div = document.createElement('div');
-                div.className = `message ${msg.sender}`; // .message.user (left) or .message.admin (right)
-
-                if (msg.image) {
-                    const img = document.createElement('img');
-                    // ... image render logic same as before ...
-                    img.src = msg.image;
-                    img.style.maxWidth = '200px';
-                    img.style.borderRadius = '10px';
-                    div.appendChild(img);
-                } else {
-                    div.textContent = msg.text;
-                }
-                adminChatMessages.appendChild(div);
+            sortedUsers.forEach(u => {
+                const item = document.createElement('div');
+                item.className = 'chat-user-item';
+                item.style.cssText = 'padding:15px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; transition:0.2s;';
+                if (activeChatUserId === u.id) item.style.background = 'rgba(255,215,0,0.1)';
+                item.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <div style="font-weight:bold; color:#fff;">${u.name}</div>
+                        ${u.unread > 0 ? `<div style="background:red; color:white; font-size:10px; padding:2px 6px; border-radius:10px;">${u.unread}</div>` : ''}
+                    </div>
+                    <div style="font-size:0.8rem; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.lastMsg || ''}</div>
+                    <div style="font-size:0.7rem; color:#555; text-align:right; margin-top:5px;">${new Date(u.lastTime).toLocaleString('th-TH')}</div>
+                `;
+                item.addEventListener('click', () => { activeChatUserId = u.id; renderAdminChat(); });
+                item.onmouseover = () => { if (activeChatUserId !== u.id) item.style.background = 'rgba(255,255,255,0.05)'; };
+                item.onmouseout = () => { if (activeChatUserId !== u.id) item.style.background = 'transparent'; };
+                chatUserList.appendChild(item);
             });
 
-            // Scroll to bottom
-            adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
+            // 3. Render Active Conversation
+            if (activeChatUserId) {
+                if (inputArea) inputArea.style.display = 'flex';
+                if (chatHeader) chatHeader.style.display = 'block';
+                if (activeUserName) activeUserName.textContent = usersMap[activeChatUserId]?.name || 'Chat';
 
-        } else {
-            // No user selected
-            inputArea.style.display = 'none';
-            chatHeader.style.display = 'none';
-            adminChatMessages.innerHTML = '<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#666; flex-direction:column;"><i class="fas fa-comments" style="font-size:3rem; margin-bottom:20px;"></i><p>เลือกแชทจากรายการทางซ้ายมือ</p></div>';
-        }
+                const conversation = messages.filter(m =>
+                    (m.sender === 'user' && m.userId === activeChatUserId) ||
+                    (m.sender === 'admin' && m.recipientId === activeChatUserId)
+                );
 
-        // Global Badge Update
-        // Global Badge Update
-        // Count unique users who have sent unread messages
-        const unreadUserIds = new Set(
-            messages.filter(m => m.sender === 'user' && !m.isRead).map(m => m.userId)
-        );
-        const totalUnreadPeople = unreadUserIds.size;
+                adminChatMessages.innerHTML = '';
+                // Mark as read in Firestore
+                conversation.forEach(async msg => {
+                    if (msg.sender === 'user' && !msg.isRead && msg.id && window.db) {
+                        try { await window.db.collection('chats').doc(msg.id).update({ isRead: true }); } catch(e) {}
+                    }
+                });
 
-        if (msgBadge) {
-            msgBadge.style.display = totalUnreadPeople > 0 ? 'inline-block' : 'none';
-            msgBadge.textContent = totalUnreadPeople > 99 ? '99+' : totalUnreadPeople;
-
-            // Optional: visual pulse if new
-            if (totalUnreadPeople > 0) {
-                msgBadge.style.animation = 'pulse-red 2s infinite';
+                conversation.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = `message ${msg.sender}`;
+                    if (msg.image) {
+                        const img = document.createElement('img');
+                        img.src = msg.image;
+                        img.style.cssText = 'max-width:200px; border-radius:10px;';
+                        div.appendChild(img);
+                    } else {
+                        div.textContent = msg.text;
+                    }
+                    adminChatMessages.appendChild(div);
+                });
+                adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
             } else {
-                msgBadge.style.animation = 'none';
+                if (inputArea) inputArea.style.display = 'none';
+                if (chatHeader) chatHeader.style.display = 'none';
+                adminChatMessages.innerHTML = '<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#666; flex-direction:column;"><i class="fas fa-comments" style="font-size:3rem; margin-bottom:20px;"></i><p>เลือกแชทจากรายการทางซ้ายมือ</p></div>';
             }
-        }
 
-        // Play Sound if new messages arrived
-        // We calculate total unread messages across all users
-        const totalUnreadCount = sortedUsers.reduce((sum, u) => sum + u.unread, 0);
-
-        if (totalUnreadCount > lastUnreadMsgCount) {
-            if (isSoundOn && audioEl) {
-                audioEl.currentTime = 0;
-                audioEl.play().catch(e => console.warn('Notification sound blocked:', e));
+            // 4. Badge Update
+            const unreadUserIds = new Set(messages.filter(m => m.sender === 'user' && !m.isRead).map(m => m.userId));
+            const totalUnreadPeople = unreadUserIds.size;
+            if (msgBadge) {
+                msgBadge.style.display = totalUnreadPeople > 0 ? 'inline-block' : 'none';
+                msgBadge.textContent = totalUnreadPeople > 99 ? '99+' : totalUnreadPeople;
+                msgBadge.style.animation = totalUnreadPeople > 0 ? 'pulse-red 2s infinite' : 'none';
             }
+            const totalUnreadCount = Object.values(usersMap).reduce((sum, u) => sum + u.unread, 0);
+            if (totalUnreadCount > lastUnreadMsgCount) {
+                if (isSoundOn && audioEl) { audioEl.currentTime = 0; audioEl.play().catch(() => {}); }
+            }
+            lastUnreadMsgCount = totalUnreadCount;
         }
-
-        // Update tracker (prevent sound loop)
-        lastUnreadMsgCount = totalUnreadCount;
     }
 
-
-    // Polling interval
+    // Polling replaced by real-time snapshot - just keep order check
     setInterval(() => {
         checkNewOrders();
-        renderAdminChat();
     }, 2000);
+
+
+
 
     // Initial load
     lastOrderCount = (JSON.parse(localStorage.getItem('otop_orders')) || []).length;
