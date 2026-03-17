@@ -1,70 +1,69 @@
-// Newsletter subscription with automatic discount
+// Newsletter subscription - Firestore-based v2.0
 class NewsletterManager {
     static async subscribe(email) {
+        // ตรวจสอบว่า Login อยู่ไหม
         const currentUser = JSON.parse(localStorage.getItem('phrae_otop_currentUser'));
 
         if (!currentUser) {
-            alert('กรุณาเข้าสู่ระบบก่อนสมัครรับข่าวสาร เพื่อรับส่วนลด 10%\n\nPlease login first to subscribe and receive 10% discount');
+            alert('กรุณาเข้าสู่ระบบก่อนสมัครรับข่าวสาร เพื่อรับส่วนลด 10%\n\nPlease login first to receive 10% discount');
             window.location.href = 'login.html';
             return;
         }
 
-        // Check if user already has newsletter subscription
-        const users = JSON.parse(localStorage.getItem('phrae_otop_users')) || [];
-        const userIndex = users.findIndex(u => u.id === currentUser.id);
-
-        if (userIndex === -1) {
-            alert('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่');
+        // ตรวจสอบว่าสมัครแล้วหรือยัง (จาก session)
+        if (currentUser.newsletter) {
+            alert('✅ คุณได้สมัครรับข่าวสารแล้ว\n\nส่วนลดของคุณ: ' + (currentUser.discount || 10) + '%\n\nYou are already subscribed!\nYour discount: ' + (currentUser.discount || 10) + '%');
             return;
         }
 
-        const user = users[userIndex];
-
-        // Check if already subscribed
-        if (user.newsletter) {
-            alert('✅ คุณได้สมัครรับข่าวสารแล้ว\n\nส่วนลดของคุณ: ' + (user.discount || 0) + '%\n\nYou are already subscribed!\nYour discount: ' + (user.discount || 0) + '%');
-            return;
-        }
-
-        // Subscribe and apply 10% discount
-        users[userIndex].newsletter = true;
-        users[userIndex].newsletterEmail = email;
-        users[userIndex].discount = 10; // Auto-apply 10% discount
-        users[userIndex].newsletterDate = new Date().toISOString();
-
-        // Save to localStorage
-        localStorage.setItem('phrae_otop_users', JSON.stringify(users));
-
-        // Update current user session
-        currentUser.newsletter = true;
-        currentUser.discount = 10;
-        localStorage.setItem('phrae_otop_currentUser', JSON.stringify(currentUser));
-
-        // Save to Firestore if available
-        if (typeof window.db !== 'undefined') {
-            try {
-                await window.db.collection('users').doc(user.id).update({
-                    newsletter: true,
-                    newsletterEmail: email,
-                    discount: 10,
-                    newsletterDate: new Date()
-                });
-            } catch (error) {
-                console.error('Firestore update failed:', error);
+        // รอให้ Firestore พร้อม
+        let db = window.db;
+        if (!db) {
+            for (let i = 0; i < 20; i++) {
+                await new Promise(r => setTimeout(r, 100));
+                if (window.db) { db = window.db; break; }
             }
         }
 
-        alert('✅ สมัครรับข่าวสารสำเร็จ!\n\nคุณได้รับส่วนลด 10% สำหรับการสั่งซื้อทุกครั้ง\nส่วนลดจะถูกนำไปใช้อัตโนมัติเมื่อชำระเงิน\n\n✅ Newsletter subscription successful!\n\nYou received 10% discount for all purchases\nDiscount will be applied automatically at checkout');
+        if (!db) {
+            alert('ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่ภายหลัง');
+            return;
+        }
 
-        // Clear input
-        const newsletterInput = document.querySelector('.newsletter-section input[type="email"]');
-        if (newsletterInput) newsletterInput.value = '';
+        try {
+            // อัปเดตใน Firestore
+            await db.collection('users').doc(currentUser.id).update({
+                newsletter: true,
+                newsletterEmail: email,
+                discount: 10,
+                newsletterDate: new Date().toISOString()
+            });
+
+            // อัปเดต session ในเครื่อง
+            currentUser.newsletter = true;
+            currentUser.discount = 10;
+            localStorage.setItem('phrae_otop_currentUser', JSON.stringify(currentUser));
+
+            alert('✅ สมัครรับข่าวสารสำเร็จ!\n\nคุณได้รับส่วนลด 10% สำหรับการสั่งซื้อทุกครั้ง\nส่วนลดจะถูกนำไปใช้อัตโนมัติเมื่อชำระเงิน\n\n✅ Subscribed successfully!\nYou received 10% discount on all purchases!');
+
+            // ล้าง input
+            const newsletterInput = document.querySelector('.newsletter-section input[type="email"]');
+            if (newsletterInput) newsletterInput.value = '';
+
+        } catch (error) {
+            console.error('Newsletter subscribe error:', error);
+            // ถ้า document ไม่มีใน Firestore (อาจเป็นสมาชิกเก่าจาก localStorage) ให้บันทึกใหม่
+            if (error.code === 'not-found') {
+                alert('ไม่พบข้อมูลบัญชีใน Firestore กรุณาสมัครสมาชิกใหม่');
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        }
     }
 }
 
 // Initialize newsletter form handler
 document.addEventListener('DOMContentLoaded', () => {
-    const newsletterForm = document.querySelector('.newsletter-section form');
     const newsletterBtn = document.querySelector('.newsletter-section button');
     const newsletterInput = document.querySelector('.newsletter-section input[type="email"]');
 
@@ -86,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             NewsletterManager.subscribe(email);
         });
 
-        // Also handle Enter key
+        // Handle Enter key
         newsletterInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
